@@ -1,5 +1,5 @@
 # Codetender
-Ever try to create your on template for a scaffolding engine (&lt;cough&gt; Yeoman &lt;/cough&gt;) and been frustrated with the seemingly endless cycle of edit template/deploy template/test template? Well frustrate no more! Now, thanks to Codetender, literally any collection of files can be a template. Get your project working **first**, then turn it into a template. Codetender serves up new projects as easy as a bartender serves up drinks. Any git repository or local folder can be a template. Just replace any text token in all file names and contents and voila! New project!
+Ever try to create your own template for a scaffolding engine (&lt;cough&gt; Yeoman &lt;/cough&gt;) and been frustrated with the seemingly endless cycle of edit template/deploy template/test template? Well frustrate no more! Now, thanks to Codetender, literally any collection of files can be a template. Get your project working **first**, then turn it into a template. Codetender serves up new projects as easy as a bartender serves up drinks. Any git repository or local folder can be a template. Just replace any text token in all file names and contents and voila! New project!
 
 ## Installation
 
