@@ -1,0 +1,25 @@
+{
+  "name": "codetender",
+  "version": "0.0.1-alpha",
+  "description": "Codetender scaffolding engine",
+  "author": "Doug Lampe",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/douglampe/codetender"
+  },
+  "bugs": {
+    "url": "https://github.com/douglampe/codetender/issues"
+  },
+  "bin": {
+    "codetender": "bin/codetender.js"
+  },
+  "preferGlobal": true,
+  "dependencies": {
+    "commander": "^2.11.0",
+    "git-clone": "^0.1.0",
+    "node-fs-extra": "^0.8.2",
+    "replace-in-file": "^2.5.3",
+    "rimraf": "^2.6.1"
+  }
+}
