@@ -1,0 +1,8 @@
+{
+  "replace": {
+    "CodeTender": "Served",
+    "foo": "bar",
+    "quick": "slow",
+    "sub": "folder"
+  }
+}

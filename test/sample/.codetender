@@ -1,0 +1,22 @@
+{
+  "tokens": [
+    {
+      "pattern": "foo",
+      "prompt": "Replace every instance of \"foo\" with:"
+    },
+    {
+      "pattern": "CodeTender",
+      "prompt": "Replace every instance of \"CodeTender\" with:"
+    }
+  ],
+  "ignore": [
+    ".*",
+    "ignore-file*",
+    "ignore-folder/",
+    "**/find-me*"
+  ],
+  "scripts": {
+    "before": "./foo.js",
+    "after": "./foo.js"
+  }
+}

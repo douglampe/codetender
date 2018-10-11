@@ -1,6 +1,6 @@
 {
   "name": "codetender",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "description": "Codetender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
@@ -18,8 +18,13 @@
   "dependencies": {
     "commander": "^2.11.0",
     "git-clone": "^0.1.0",
+    "mkdirp": "^0.5.1",
     "node-fs-extra": "^0.8.2",
+    "q": "^1.5.1",
     "replace-in-file": "^2.5.3",
     "rimraf": "^2.6.1"
+  },
+  "devDependencies": {
+    "tap": "^12.0.1"
   }
 }

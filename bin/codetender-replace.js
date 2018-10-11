@@ -1,6 +1,6 @@
 var commander = require('commander'),
     fs = require('fs'),
-    codetender = require('./common.js');
+    common = require('./common.js');
 
 commander
 .arguments('<folder>')
@@ -12,5 +12,13 @@ commander
  * @param {string} folder Destination folder
  */
 function parseArgs(folder) {
-  codetender.getTokens(null, folder);
+  common.getTokens(null, folder).then(function(tokens) {
+    common.replaceTokens(folder, tokens.fromItems, tokens.toStrings).then(function() {
+      console.log('Renaming files in  folder ' + folder);
+      common.renameAllFiles(folder, tokens.fromItems, tokens.toStrings).then(function() {
+        common.splash();
+        common.logTokenSuccess(tokens);
+      });
+    });
+  });
 }
