@@ -19,7 +19,7 @@ OR
 
     codetender new ../relative/path/to/folder new_folder_name
 
-You will be prompted for each token to replace and the replacement text. Codetender will then create a folder and copy the files into the folder. If the files come from a git repository, the `.git` folder will be deleted to disconnedt it from the original remote branch. Finally, codetender will replace all of the tokens as specified in file names, folder names, and file content.
+You will be prompted for each token to replace and the replacement text. Codetender will then create a folder and copy the files into the folder. If the files come from a git repository, the `.git` folder will be deleted to disconnect it from the original remote branch. Finally, codetender will replace all of the tokens as specified in file names, folder names, and file content.
 
 ## Rename Tokens in Existing Folder
 
