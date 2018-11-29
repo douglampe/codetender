@@ -279,6 +279,12 @@ function CodeTender() {
       item,
       promises = [];
 
+    // Don't replace anything in the .git folder
+    if (folder.indexOf('.git') > -1) {
+      deferred.resolve();
+      return deferred.promise;
+    }
+
     for (i = 0; i < contents.length; i++) {
       item = contents[i];
       promises.push(rename(folder, item, fromTokens, toStrings));
