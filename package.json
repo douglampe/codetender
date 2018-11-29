@@ -1,6 +1,6 @@
 {
   "name": "codetender",
-  "version": "0.0.2-alpha",
+  "version": "0.0.3-alpha",
   "description": "Codetender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
@@ -13,6 +13,9 @@
   },
   "bin": {
     "codetender": "bin/codetender.js"
+  },
+  "scripts": {
+    "test": "node test/common.js"
   },
   "preferGlobal": true,
   "dependencies": {
