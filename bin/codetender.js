@@ -7,6 +7,8 @@ var fs = require('fs'),
   mkdirp = require('mkdirp'),
   clone = require('git-clone'),
   rimraf = require('rimraf'),
+  exec = require('child_process').exec,
+  
   replaceInFile = require('replace-in-file');
 
 module.exports = { 
@@ -47,8 +49,10 @@ function CodeTender() {
       readConfig,
       getTokens,
       prepTokens,
+      runBeforeScript,
       replaceTokens,
       renameAllFiles,
+      runAfterScript,
       splash,
       logCloneSuccess,
       logTokenSuccess
@@ -209,6 +213,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  // Convert tokens to regular expressions and create arrays for external calls
   function prepTokens() {
     var tokens = me.config.tokens,
         fromItems = [],
@@ -223,6 +228,16 @@ function CodeTender() {
     me.config.toStrings = toStrings;
 
     return Promise.resolve();
+  }
+
+  // Run the before script if it exists
+  function runBeforeScript() {
+    if (me.config.scripts && me.config.scripts.before) {
+      return runChildProcess(me.config.scripts.before);
+    }
+    else {
+      return Promise.resolve();
+    }
   }
 
   /**
@@ -256,9 +271,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
-  /**
-   * Copy template from local file system
-   */
+   // Copy template from local file system
   function copyFromFs(from, to) {
     var deferred = q.defer();
 
@@ -296,9 +309,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
-  /**
-   * Replace tokens in file contents
-   */
+   // Replace tokens in file contents
   function replaceTokens() {
     var deferred = q.defer(),
       path = me.config.folder,
@@ -349,13 +360,12 @@ function CodeTender() {
     return tokens;
   }
 
+  // Convert a string to replace to a regex
   function convertStringToToken(tokenString) {
     return new RegExp(tokenString.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
   }
 
-  /**
-   * Rename files and folders
-   */
+   // Rename files and folders
   function renameAllFiles() {
     var deferred = q.defer(),
       i,
@@ -447,6 +457,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  // Rename all items in the specified folder
   function renameItems(folder, contents, fromTokens, toStrings) {
     var deferred = q.defer(),
       i,
@@ -473,6 +484,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  // Rename an item in the specified folder
   function rename(folder, item, fromTokens, toStrings) {
     var deferred = q.defer(),
       oldFile = path.join(folder, item),
@@ -503,14 +515,46 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  // Run the after script if present
+  function runAfterScript() {
+    if (me.config.scripts && me.config.scripts.after) {
+      return runChildProcess(me.config.scripts.after);
+    }
+    else {
+      return Promise.resolve();
+    }
+  }
+
+  // Run a child process
+  function runChildProcess(command) {
+    var deferred = q.defer(),
+        cwd = process.cwd();
+
+    process.chdir(me.config.folder);
+
+    exec(command, function(err) {
+      if (err) {
+        oops(err);
+        deferred.reject(err);
+      }
+      else {
+        deferred.resolve();
+      }
+      process.chdir(cwd);
+    });
+
+    return deferred.promise;
+  }
+
+  // Log success of the clone operation
   function logCloneSuccess() {
     log('Successfully cloned template from \"' + me.config.template + '\" to \"' + me.config.folder + '\".');
     return Promise.resolve();
   }
 
+  // Log success of token replacement
   function logTokenSuccess() {
     var i,
-      item,
       tokens = me.config.tokens;
 
     log('Successfully replaced the following tokens where found:');

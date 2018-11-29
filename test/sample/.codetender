@@ -18,7 +18,7 @@
     "**/find-me*"
   ],
   "scripts": {
-    "before": "./foo.js",
-    "after": "./foo.js"
+    "before": "node ./codetender-before.js",
+    "after": "node ./codetender-after.js"
   }
 }

@@ -10,6 +10,7 @@ process.chdir(__dirname);
 
 t.test('CodeTender new', function(t) {
   codetender.new({
+    quiet: true,
     template: 'sample', 
     folder: './output/test-new',
     tokens: [
@@ -25,16 +26,18 @@ t.test('CodeTender new', function(t) {
         pattern: 'sub',
         replacement: 'folder'
       }
-    ],
-    quiet: true,
+    ]
   }).then(function() {
     fs.readFile('./output/test-new/folder/README.md', { encoding: "utf-8" }, function(err, data) {
       t.equal(data, '# This Is Served', "CodeTender replaced with Served");
       fs.stat('./output/test-new/bar.js', function(err, stat1) {
         fs.stat('./output/test-new/folder', function(err, stat2) {
-          t.ok(stat1 && stat1.isFile(), "foo replaced with bar");
-          t.ok(stat2 && stat2.isDirectory(), "sub replaced with folder");
-          rimraf('./output/test-new', t.end);
+          fs.stat('./output/test-new/before.txt', function(err, stat3) {
+            t.ok(stat1 && stat1.isFile(), "foo replaced with bar");
+            t.ok(stat2 && stat2.isDirectory(), "sub replaced with folder");
+            t.ok(stat3 && stat3.isFile(), "before script runs");
+            rimraf('./output/test-new', t.end);
+          });
         });
       });
     });
