@@ -1,6 +1,6 @@
 var commander = require('commander'),
     fs = require('fs'),
-    common = require('./common.js');
+    codetender = require('./codetender.js');
 
 commander
 .arguments('<template> <folder>')
@@ -18,16 +18,16 @@ function parseArgs(template, folder) {
     return;
   }
 
-  common.getTokens().then(function(tokens) {
+  codetender.getTokens().then(function(tokens) {
     console.log('Cloning template ' + template + ' into folder ' + folder);
-    common.copyOrClone(template, folder).then(function() {
+    codetender.copyOrClone(template, folder).then(function() {
       console.log('Replacing tokens in  folder ' + folder);
-      common.replaceTokens(folder, tokens.fromItems, tokens.toStrings).then(function() {
+      codetender.replaceTokens(folder, tokens.fromItems, tokens.toStrings).then(function() {
         console.log('Renaming files in  folder ' + folder);
-        common.renameAllFiles(folder, tokens.fromItems, tokens.toStrings).then(function() {
-          common.splash();
-          common.logCloneSuccess(template, folder);
-          common.logTokenSuccess(tokens);
+        codetender.renameAllFiles(folder, tokens.fromItems, tokens.toStrings).then(function() {
+          codetender.splash();
+          codetender.logCloneSuccess(template, folder);
+          codetender.logTokenSuccess(tokens);
         });
       });
     });

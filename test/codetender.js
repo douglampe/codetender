@@ -1,13 +1,13 @@
 var t = require('tap'),
   fs = require('fs'),
   rimraf = require('rimraf'),
-  common = require('../bin/common.js');
+  codetender = require('../bin/codetender.js');
 
 // Make sure working directory is this folder:
 process.chdir(__dirname); 
 
 t.test('Copy from file system', function(t) {
-  common.copyOrClone('sample', './output/test-copy').then(function() {
+  codetender.copyOrClone('sample', './output/test-copy').then(function() {
     fs.stat('./output/test-copy/sub/README.md', function(err, stat) {
       t.ok(stat.isFile(), "Does deep copy");
       rimraf('./output/test-copy', t.end);
@@ -16,8 +16,8 @@ t.test('Copy from file system', function(t) {
 });
 
 t.test('Copy and replace tokens', function(t) {
-  common.copyOrClone('sample', './output/test-replace').then(function() {
-    common.replaceTokens('./output/test-replace', ['CodeTender', 'foo'], ['Served', 'bar']).then(function() {
+  codetender.copyOrClone('sample', './output/test-replace').then(function() {
+    codetender.replaceTokens('./output/test-replace', ['CodeTender', 'foo'], ['Served', 'bar']).then(function() {
       fs.readFile('./output/test-replace/sub/README.md', { encoding: "utf-8" }, function(err, data) {
         t.equal(data, '# This Is Served', "CodeTender replaced with Served");
         rimraf('./output/test-replace', t.end);
@@ -27,7 +27,7 @@ t.test('Copy and replace tokens', function(t) {
 });
 
 t.test('Copy and rename files', function(t) {
-  common.copyOrClone('./sample', './output/test-rename').then(function() {
+  codetender.copyOrClone('./sample', './output/test-rename').then(function() {
     fs.mkdir('./output/test-rename/.git', function(err1) {
       if (err1) {
         t.threw(err1);
@@ -37,7 +37,7 @@ t.test('Copy and rename files', function(t) {
           t.threw(err2);
         }
         process.nextTick(function() {
-          common.renameAllFiles('./output/test-rename', ['CodeTender', 'foo', 'sub'], ['Served', 'bar', 'folder']).then(function() {
+          codetender.renameAllFiles('./output/test-rename', ['CodeTender', 'foo', 'sub'], ['Served', 'bar', 'folder']).then(function() {
             fs.stat('./output/test-rename/bar.js', function(err, stat) {
               fs.stat('./output/test-rename/folder', function(err, stat2) {
                 fs.stat('./output/test-rename/.git/foo.txt', function(err, stat3) {
