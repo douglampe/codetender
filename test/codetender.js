@@ -12,10 +12,20 @@ t.test('CodeTender new', function(t) {
   codetender.new({
     template: 'sample', 
     folder: './output/test-new',
-    tokens: {
-      fromItems: ['CodeTender', 'foo', 'sub'],
-      toStrings: ['Served', 'bar', 'folder']
-    },
+    tokens: [
+      {
+        pattern: 'CodeTender',
+        replacement: 'Served'
+      },
+      {
+        pattern: 'foo',
+        replacement: 'bar'
+      },
+      {
+        pattern: 'sub',
+        replacement: 'folder'
+      }
+    ],
     quiet: true,
   }).then(function() {
     fs.readFile('./output/test-new/folder/README.md', { encoding: "utf-8" }, function(err, data) {
@@ -36,10 +46,20 @@ t.test('CodeTender replace', function (t) {
       config = {
         quiet: true,
         folder: './output/test-replace',
-        tokens: {
-          fromItems: ['CodeTender', 'foo', 'sub'],
-          toStrings: ['Served', 'bar', 'folder']
-        },
+        tokens: [
+          {
+            pattern: 'CodeTender',
+            replacement: 'Served'
+          },
+          {
+            pattern: 'foo',
+            replacement: 'bar'
+          },
+          {
+            pattern: 'sub',
+            replacement: 'folder'
+          }
+        ]
       };
 
   mkdirp(config.folder, function (err) {

@@ -1,12 +1,14 @@
 {
   "tokens": [
     {
-      "pattern": "foo",
-      "prompt": "Replace every instance of \"foo\" with:"
+      "pattern": "foo"
     },
     {
       "pattern": "CodeTender",
-      "prompt": "Replace every instance of \"CodeTender\" with:"
+      "prompt": "Custom prompt to replace CodeTender:"
+    },
+    {
+      "pattern": "sub"
     }
   ],
   "ignore": [

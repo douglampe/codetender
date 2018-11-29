@@ -26,19 +26,6 @@ function CodeTender() {
   me.new = newFromTemplate;
   me.replace = replace;
 
-  function intitConfig(config) {
-    me.config = Object.assign(
-      {
-        logger: console.log,
-        tokens: {
-          fromItems: [],
-          toStrings: []
-        }
-      }, 
-      config
-    );
-  }
-
   /**
    * Copies a template defined by config.tempalte to a folder defined by config.folder
    * and replacee tokens as specified by either the comand line or configuration.
@@ -56,8 +43,10 @@ function CodeTender() {
     }
 
     runTasks([
-      getTokens,
       copyOrClone,
+      readConfig,
+      getTokens,
+      prepTokens,
       replaceTokens,
       renameAllFiles,
       splash,
@@ -79,6 +68,7 @@ function CodeTender() {
 
     runTasks([
       getTokens,
+      prepTokens,
       replaceTokens,
       renameAllFiles,
       splash,
@@ -88,36 +78,118 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  function intitConfig(config) {
+    me.config = Object.assign(
+      {
+        logger: console.log,
+        tokens: []
+      }, 
+      config
+    );
+  }
+
+  function readConfig() {
+    var deferred = q.defer(),
+        fileConfig;
+
+    fs.readFile(path.join(me.config.folder, ".codetender"), { encoding: "utf-8" }, function(err, data) {
+      if (err) {
+        // If we get an error, assume it is because the config doesn't exist and continue:
+        deferred.resolve();
+      }
+      else {
+        fileConfig = JSON.parse(data);
+        tokens = me.config.tokens,
+        me.config = Object.assign({}, fileConfig, me.config);
+        if (me.config.tokens.length === 0 && fileConfig.tokens) {
+          me.config.tokens = fileConfig.tokens;
+        }
+        deferred.resolve();
+      }
+    });
+
+    return deferred.promise;
+  }
+
+  function getTokens() {
+    var missingValues,
+        tokens = me.config.tokens;
+
+    if (tokens.length === 0) {
+      return getTokensFromCommandLine();
+    }
+    else {
+      tokens.forEach(function(token) {
+        if (!token.replacement) {
+          missingValues = true;
+        }
+      });
+      if (missingValues) {
+        return getTokensFromPrompts();
+      }
+      else {
+        return Promise.resolve();
+      }
+    }
+  }
+
   /**
    * Prompt user to provide tokens and replacement values
    */
-  function getTokens(force) {
+  function getTokensFromCommandLine() {
     var deferred = q.defer(),
-    tokens = me.config.tokens;
+    tokens = me.config.tokens,
+    newToken;
 
-    if (force || (tokens.fromItems.length === 0 && tokens.toStrings.length === 0))
-    {
-      ask('Token to replace [done]: ').then(function (newFrom) {
-        if (newFrom !== '') {
-          tokens.fromItems.push(convertStringToToken(newFrom));
-          ask('Replace with [abort]: ').then(function (newTo) {
-            if (newTo !== '') {
-              tokens.toStrings.push(newTo);
-              getTokens(true).then(deferred.resolve).catch(deferred.reject);
-            }
-            else {
-              deferred.reject();
-            }
-          });
-        }
-        else {
-          deferred.resolve();
-        }
+    ask('Token to replace [done]: ').then(function (newFrom) {
+      if (newFrom !== '') {
+        newToken = { pattern: convertStringToToken(newFrom) };
+        tokens.push(newToken);
+        ask('Replace with [abort]: ').then(function (newTo) {
+          if (newTo !== '') {
+            newToken.replacement = newTo;
+            getTokensFromCommandLine().then(deferred.resolve).catch(deferred.reject);
+          }
+          else {
+            deferred.reject();
+          }
+        });
+      }
+      else {
+        deferred.resolve();
+      }
+    });
+
+    return deferred.promise;
+  }
+
+  function getTokensFromPrompts() {
+    var deferred = q.defer(),
+        prompts = [];
+
+    me.config.tokens.forEach(function(token) {
+      prompts.push(function() {
+        return getTokenFromPrompt(token);
       });
-    }
-    else {
-      deferred.resolve();
-    }
+    });
+
+    runTasks(prompts).then(deferred.resolve).catch(deferred.reject);
+    
+    return deferred.promise;
+  }
+
+  function getTokenFromPrompt(token) {
+    var deferred = q.defer();
+
+    ask(token.prompt || 'Replace all instances of "' + token.pattern + '" with [abort]:').then(function(response) {
+      if (response === '') {
+        deferred.reject();
+      }
+      else {
+        token.replacement = response;
+        deferred.resolve();
+      }
+    });
 
     return deferred.promise;
   }
@@ -135,6 +207,22 @@ function CodeTender() {
     });
 
     return deferred.promise;
+  }
+
+  function prepTokens() {
+    var tokens = me.config.tokens,
+        fromItems = [],
+        toStrings = [];
+    
+    tokens.forEach(function (token) {
+      fromItems.push(token.pattern);
+      toStrings.push(token.replacement);
+    });
+
+    me.config.fromTokens = convertTokens(fromItems);
+    me.config.toStrings = toStrings;
+
+    return Promise.resolve();
   }
 
   /**
@@ -210,17 +298,13 @@ function CodeTender() {
 
   /**
    * Replace tokens in file contents
-   * @param {string} path path to folder to recursively replace tokens in
-   * @param {Array<string/RegExp>} fromItems array of strings or regular expressions to find
-   * @param {Array<string>} toStrings array of strings to replace found content with
    */
   function replaceTokens() {
     var deferred = q.defer(),
       path = me.config.folder,
-      fromItems = me.config.tokens.fromItems,
-      toStrings = me.config.tokens.toStrings,
-      fromTokens = convertTokens(fromItems);
-
+      fromTokens = me.config.fromTokens,
+      toStrings = me.config.toStrings;
+      
     if (!me.config.quiet) {
       log('Replacing tokens in  folder ' + path);
     }
@@ -276,9 +360,8 @@ function CodeTender() {
     var deferred = q.defer(),
       i,
       folder = me.config.folder,
-      fromItems = me.config.tokens.fromItems,
-      toStrings = me.config.tokens.toStrings,
-      fromTokens = convertTokens(fromItems);
+      fromTokens = me.config.fromTokens,
+      toStrings = me.config.toStrings;
 
     if (!fromTokens) {
       deferred.reject('Tokens to replace must be either a string or RegExp.');
@@ -432,30 +515,28 @@ function CodeTender() {
 
     log('Successfully replaced the following tokens where found:');
 
-    for (i = 0; i < tokens.fromItems.length && i < tokens.toStrings.length; i++) {
-      item = tokens.fromItems[i];
-      if (item instanceof RegExp) {
-        item = item.source;
-      }
-      log(item + ' -> ' + tokens.toStrings[i]);
-    }
+    tokens.forEach(function (token) {
+      log(token.pattern + ' -> ' + token.replacement);
+    });
     return Promise.resolve();
   }
 
   // Run a series of promises in sync
   function runTasks(tasks) {
     var result = Promise.resolve(),
-        failed;
+        failed,
+        err;
     
     tasks.forEach(function(task) {
       result = result.then(task).catch(function (err) {
         oops(err);
+        err = err;
         failed = true;
       });
     });
 
     if (failed) {
-      return Promise.reject();
+      return Promise.reject(err);
     }
     else {
       return result;
