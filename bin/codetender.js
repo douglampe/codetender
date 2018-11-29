@@ -9,55 +9,129 @@ var fs = require('fs'),
   rimraf = require('rimraf'),
   replaceInFile = require('replace-in-file');
 
-module.exports = new CodeTender();
+module.exports = { 
+  new: function(config) { 
+    var codetender = new CodeTender();
+    return codetender.new(config); 
+  },
+  replace: function(config) {
+    var codetender = new CodeTender();
+    return codetender.replace(config); 
+  }
+};
 
 function CodeTender() {
+  var me = this;
   
-  this.splash =  splash;
-  this.getTokens = getTokens;
-  this.copyOrClone = copyOrClone;
-  this.replaceTokens = replaceTokens;
-  this.renameAllFiles = renameAllFiles;
-  this.logCloneSuccess = logCloneSuccess;
-  this.logTokenSuccess = logTokenSuccess;
-  this.oops = oops;
-  this.logger = console.log;
+  me.new = newFromTemplate;
+  me.replace = replace;
+
+  function intitConfig(config) {
+    me.config = Object.assign(
+      {
+        logger: console.log,
+        tokens: {
+          fromItems: [],
+          toStrings: []
+        }
+      }, 
+      config
+    );
+  }
+
+  /**
+   * Copies a template defined by config.tempalte to a folder defined by config.folder
+   * and replacee tokens as specified by either the comand line or configuration.
+   * @param {object} config 
+   */
+  function newFromTemplate(config) {
+    var deferred = q.defer();
+    
+    intitConfig(config);
+
+    if (fs.existsSync(me.config.folder)) {
+      log('Folder ' + me.config.folder + ' already exists. Please specify a valid name for a new folder.');
+      deferred.reject();
+      return deferred.promise;
+    }
+
+    runTasks([
+      getTokens,
+      copyOrClone,
+      replaceTokens,
+      renameAllFiles,
+      splash,
+      logCloneSuccess,
+      logTokenSuccess
+    ]).then(deferred.resolve).catch(deferred.reject);
+
+    return deferred.promise;
+  }
+
+    /**
+   * Replaces tokens as specified by either the comand line or configuration.
+   * @param {object} config 
+   */
+  function replace(config) {
+    var deferred = q.defer();
+
+    intitConfig(config);
+
+    runTasks([
+      getTokens,
+      replaceTokens,
+      renameAllFiles,
+      splash,
+      logTokenSuccess
+    ]).then(deferred.resolve).catch(deferred.reject);
+
+    return deferred.promise;
+  }
 
   /**
    * Prompt user to provide tokens and replacement values
    */
-  function getTokens(tokens) {
-    var rl,
-      tokens = tokens || {
-        fromItems: [],
-        toStrings: []
-      },
-      deferred = deferred || q.defer();
+  function getTokens(force) {
+    var deferred = q.defer(),
+    tokens = me.config.tokens;
 
-    rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
+    if (force || (tokens.fromItems.length === 0 && tokens.toStrings.length === 0))
+    {
+      ask('Token to replace [done]: ').then(function (newFrom) {
+        if (newFrom !== '') {
+          tokens.fromItems.push(convertStringToToken(newFrom));
+          ask('Replace with [abort]: ').then(function (newTo) {
+            if (newTo !== '') {
+              tokens.toStrings.push(newTo);
+              getTokens(true).then(deferred.resolve).catch(deferred.reject);
+            }
+            else {
+              deferred.reject();
+            }
+          });
+        }
+        else {
+          deferred.resolve();
+        }
+      });
+    }
+    else {
+      deferred.resolve();
+    }
 
-    rl.question('Token to replace [done]: ', function (newFrom) {
-      if (newFrom !== '') {
-        tokens.fromItems.push(convertStringToToken(newFrom));
-        rl.question('Replace with [abort]: ', function (newTo) {
-          if (newTo !== '') {
-            tokens.toStrings.push(newTo);
-            rl.close();
-            getTokens(tokens).then(deferred.resolve).catch(deferred.reject);
-          }
-          else {
-            rl.close();
-            deferred.reject();
-          }
+    return deferred.promise;
+  }
+
+  function ask(prompt) {
+    var deferred = q.defer(),
+        rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
         });
-      }
-      else {
-        rl.close();
-        deferred.resolve(tokens);
-      }
+
+    rl.question(prompt, function (response) {
+      deferred.resolve(response);
+      rl.close();
     });
 
     return deferred.promise;
@@ -66,8 +140,14 @@ function CodeTender() {
   /**
    * Parse folder argument and call clone or copy
    */
-  function copyOrClone(template, folder) {
-    var deferred = q.defer();
+  function copyOrClone() {
+    var deferred = q.defer(),
+        template = me.config.template,
+        folder = me.config.folder;
+
+    if (!me.config.quiet) {
+      log('Cloning template ' + template + ' into folder ' + folder);
+    }
 
     if (fs.existsSync(template)) {
       copyFromFs(template, folder).then(function () {
@@ -79,7 +159,7 @@ function CodeTender() {
         template = template + '.git';
       }
       if (!template.match(/http.+/g)) {
-        template = 'https://gitlab.com/' + template;
+        template = 'https://github.com/' + template;
       }
       gitClone(template, folder).then(function () {
         deferred.resolve();
@@ -134,12 +214,20 @@ function CodeTender() {
    * @param {Array<string/RegExp>} fromItems array of strings or regular expressions to find
    * @param {Array<string>} toStrings array of strings to replace found content with
    */
-  function replaceTokens(path, fromItems, toStrings) {
+  function replaceTokens() {
     var deferred = q.defer(),
+      path = me.config.folder,
+      fromItems = me.config.tokens.fromItems,
+      toStrings = me.config.tokens.toStrings,
       fromTokens = convertTokens(fromItems);
 
+    if (!me.config.quiet) {
+      log('Replacing tokens in  folder ' + path);
+    }
+
     if (!fromTokens) {
-      deferred.reject('Tokens to replace must be either a string or RegExp.');
+      oops('Tokens to replace must be either a string or RegExp.');
+      deferred.reject();
       return deferred.promise;
     }
 
@@ -184,9 +272,12 @@ function CodeTender() {
   /**
    * Rename files and folders
    */
-  function renameAllFiles(folder, fromItems, toStrings) {
+  function renameAllFiles() {
     var deferred = q.defer(),
       i,
+      folder = me.config.folder,
+      fromItems = me.config.tokens.fromItems,
+      toStrings = me.config.tokens.toStrings,
       fromTokens = convertTokens(fromItems);
 
     if (!fromTokens) {
@@ -329,22 +420,51 @@ function CodeTender() {
     return deferred.promise;
   }
 
-  function logCloneSuccess(template, folder) {
-    this.logger('Successfully cloned template from \"' + template + '\" to \"' + folder + '\".');
+  function logCloneSuccess() {
+    log('Successfully cloned template from \"' + me.config.template + '\" to \"' + me.config.folder + '\".');
+    return Promise.resolve();
   }
 
-  function logTokenSuccess(tokens) {
+  function logTokenSuccess() {
     var i,
-      item;
+      item,
+      tokens = me.config.tokens;
 
-    this.logger('Successfully replaced the following tokens where found:');
+    log('Successfully replaced the following tokens where found:');
 
     for (i = 0; i < tokens.fromItems.length && i < tokens.toStrings.length; i++) {
       item = tokens.fromItems[i];
       if (item instanceof RegExp) {
         item = item.source;
       }
-      this.logger(item + ' -> ' + tokens.toStrings[i]);
+      log(item + ' -> ' + tokens.toStrings[i]);
+    }
+    return Promise.resolve();
+  }
+
+  // Run a series of promises in sync
+  function runTasks(tasks) {
+    var result = Promise.resolve(),
+        failed;
+    
+    tasks.forEach(function(task) {
+      result = result.then(task).catch(function (err) {
+        oops(err);
+        failed = true;
+      });
+    });
+
+    if (failed) {
+      return Promise.reject();
+    }
+    else {
+      return result;
+    }
+  }
+
+  function log(output) {
+    if (!me.config.quiet) {
+      me.config.logger(output);
     }
   }
 
@@ -352,12 +472,14 @@ function CodeTender() {
    * Display splash screen
    */
   function splash() {
-    this.logger('');
-    this.logger('  _____        __    __              __       ');
-    this.logger(' / ___/__  ___/ /__ / /____ ___  ___/ /__ ____');
-    this.logger('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
-    this.logger('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
-    this.logger('');
+    log('');
+    log('  _____        __    __              __       ');
+    log(' / ___/__  ___/ /__ / /____ ___  ___/ /__ ____');
+    log('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
+    log('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
+    log('');
+    
+    return Promise.resolve();
   }
 
   /**
@@ -365,12 +487,12 @@ function CodeTender() {
    * @param {string} err Error message
    */
   function oops(err) {
-    this.logger('                          __');
-    this.logger('  ____  ____  ____  _____/ /');
-    this.logger(' / __ \\/ __ \\/ __ \\/ ___/ /');
-    this.logger('/ /_/ / /_/ / /_/ (__  )_/');
-    this.logger('\\____/\\____/ .___/____(_)');
-    this.logger('          /_/ ');
-    this.logger(err);
+    log('                          __');
+    log('  ____  ____  ____  _____/ /');
+    log(' / __ \\/ __ \\/ __ \\/ ___/ /');
+    log('/ /_/ / /_/ / /_/ (__  )_/');
+    log('\\____/\\____/ .___/____(_)');
+    log('          /_/ ');
+    log(err);
   }
 }
