@@ -13,8 +13,8 @@
   ],
   "ignore": [
     ".*",
-    "ignore-file*",
-    "ignore-folder/",
+    "**/ignore-file.txt",
+    "ignored-folder/",
     "**/find-me*"
   ],
   "scripts": {

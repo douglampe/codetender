@@ -6,9 +6,10 @@ var fs = require('fs'),
   q = require('q'),
   mkdirp = require('mkdirp'),
   clone = require('git-clone'),
+  glob = require('glob'),
   rimraf = require('rimraf'),
   exec = require('child_process').exec,
-  
+
   replaceInFile = require('replace-in-file');
 
 module.exports = { 
@@ -38,7 +39,7 @@ function CodeTender() {
     
     intitConfig(config);
 
-    if (fs.existsSync(me.config.folder)) {
+    if (fs.existsSync(me.config.targetPath)) {
       log('Folder ' + me.config.folder + ' already exists. Please specify a valid name for a new folder.');
       deferred.reject();
       return deferred.promise;
@@ -86,17 +87,30 @@ function CodeTender() {
     me.config = Object.assign(
       {
         logger: console.log,
-        tokens: []
+        tokens: [],
+        ignore: [],
+        ignoredFiles: {}
       }, 
       config
     );
+
+    // Always ignore .git folder
+    if (me.config.ignore.indexOf('.git/') === -1) {
+      me.config.ignore.push('.git/');
+    }
+    // Always ignore the .codetender file
+    if (me.config.ignore.indexOf('.codetender') === -1) {
+      me.config.ignore.push('.codetender');
+    }
+
+    me.config.targetPath = path.resolve(config.folder);
   }
 
   function readConfig() {
     var deferred = q.defer(),
         fileConfig;
 
-    fs.readFile(path.join(me.config.folder, ".codetender"), { encoding: "utf-8" }, function(err, data) {
+    fs.readFile(path.join(me.config.targetPath, ".codetender"), { encoding: "utf-8" }, function(err, data) {
       if (err) {
         // If we get an error, assume it is because the config doesn't exist and continue:
         deferred.resolve();
@@ -107,6 +121,9 @@ function CodeTender() {
         me.config = Object.assign({}, fileConfig, me.config);
         if (me.config.tokens.length === 0 && fileConfig.tokens) {
           me.config.tokens = fileConfig.tokens;
+        }
+        if (fileConfig.ignore) {
+          me.config.ignore = me.config.ignore.concat(fileConfig.ignore); 
         }
         deferred.resolve();
       }
@@ -215,9 +232,11 @@ function CodeTender() {
 
   // Convert tokens to regular expressions and create arrays for external calls
   function prepTokens() {
-    var tokens = me.config.tokens,
+    var deferred = q.defer(),
+        tokens = me.config.tokens,
         fromItems = [],
-        toStrings = [];
+        toStrings = [],
+        promises = [];
     
     tokens.forEach(function (token) {
       fromItems.push(token.pattern);
@@ -227,7 +246,22 @@ function CodeTender() {
     me.config.fromTokens = convertTokens(fromItems);
     me.config.toStrings = toStrings;
 
-    return Promise.resolve();
+    me.config.ignore.forEach(function(pattern) {
+      var d = q.defer();
+      glob(pattern, { cwd: me.config.targetPath }, function(err, matches) {
+        if (matches) {
+          matches.forEach(function(match) {
+            me.config.ignoredFiles[path.resolve(me.config.targetPath, match)] = true;
+          });
+        }
+        deferred.resolve();
+      });
+      promises.push(d.promise);
+    });
+
+    q.all(promises).then(deferred.resolve).catch(deferred.reject);
+
+    return deferred.promise;
   }
 
   // Run the before script if it exists
@@ -246,7 +280,7 @@ function CodeTender() {
   function copyOrClone() {
     var deferred = q.defer(),
         template = me.config.template,
-        folder = me.config.folder;
+        folder = me.config.targetPath;
 
     if (!me.config.quiet) {
       log('Cloning template ' + template + ' into folder ' + folder);
@@ -312,7 +346,7 @@ function CodeTender() {
    // Replace tokens in file contents
   function replaceTokens() {
     var deferred = q.defer(),
-      path = me.config.folder,
+      path = me.config.targetPath,
       fromTokens = me.config.fromTokens,
       toStrings = me.config.toStrings;
       
@@ -328,6 +362,7 @@ function CodeTender() {
 
     replaceInFile({
       files: [path + '/**/*.*'],
+      ignore: me.config.ignore,
       from: fromTokens,
       to: toStrings
     }).then(deferred.resolve)
@@ -369,7 +404,7 @@ function CodeTender() {
   function renameAllFiles() {
     var deferred = q.defer(),
       i,
-      folder = me.config.folder,
+      folder = me.config.targetPath,
       fromTokens = me.config.fromTokens,
       toStrings = me.config.toStrings;
 
@@ -458,28 +493,29 @@ function CodeTender() {
   }
 
   // Rename all items in the specified folder
-  function renameItems(folder, contents, fromTokens, toStrings) {
+    function renameItems(folder, contents, fromTokens, toStrings) {
     var deferred = q.defer(),
       i,
       item,
-      promises = [];
+      promises = [],
+      ignore = me.config.ignore;
 
-    // Don't replace anything in the .git folder
-    if (folder.indexOf('.git') > -1) {
+    // Don't replace anything in the ignored folders
+    if (me.config.ignoredFiles[folder]) {
       deferred.resolve();
-      return deferred.promise;
     }
+    else {
+      for (i = 0; i < contents.length; i++) {
+        item = contents[i];
+        promises.push(rename(folder, item, fromTokens, toStrings));
+      }
 
-    for (i = 0; i < contents.length; i++) {
-      item = contents[i];
-      promises.push(rename(folder, item, fromTokens, toStrings));
+      q.all(promises).then(function () {
+        deferred.resolve();
+      }).catch(function (err) {
+        deferred.reject(err);
+      });
     }
-
-    q.all(promises).then(function () {
-      deferred.resolve();
-    }).catch(function (err) {
-      deferred.reject(err);
-    });
 
     return deferred.promise;
   }
@@ -527,12 +563,9 @@ function CodeTender() {
 
   // Run a child process
   function runChildProcess(command) {
-    var deferred = q.defer(),
-        cwd = process.cwd();
+    var deferred = q.defer();
 
-    process.chdir(me.config.folder);
-
-    exec(command, function(err) {
+    exec(command, { cwd: me.config.targetPath }, function(err) {
       if (err) {
         oops(err);
         deferred.reject(err);
@@ -540,7 +573,6 @@ function CodeTender() {
       else {
         deferred.resolve();
       }
-      process.chdir(cwd);
     });
 
     return deferred.promise;

@@ -3,10 +3,45 @@ var t = require('tap'),
   rimraf = require('rimraf'),
   fsExtra = require('node-fs-extra'),
   mkdirp = require('mkdirp'),
+  path = require('path'),
   codetender = require('../bin/codetender.js');
 
 // Make sure working directory is this folder:
 process.chdir(__dirname); 
+
+function checkFile(file) {
+  var stat = fs.statSync(path.join(__dirname, file));
+
+  return stat && stat.isFile();
+}
+
+function checkDir(file) {
+  var stat = fs.statSync(path.join(__dirname, file));
+
+  return stat && stat.isDirectory();
+}
+
+function checkContents(file, expected) {
+  if (!checkFile(file)) {
+    return false;
+  }
+  var contents = fs.readFileSync(path.join(__dirname, file), 'utf8');
+
+  return contents === expected;
+}
+
+function cleanupNew(err) {
+  rimraf(path.join(__dirname, 'output/test-new'), function() {
+    if (err) {
+      t.threw(err);
+    }
+  });
+}
+
+function cleanupReplace(err) {
+  rimraf(path.join(__dirname, 'output/test-replace'), function() {
+  });
+}
 
 t.test('CodeTender new', function(t) {
   codetender.new({
@@ -28,19 +63,14 @@ t.test('CodeTender new', function(t) {
       }
     ]
   }).then(function() {
-    fs.readFile('./output/test-new/folder/README.md', { encoding: "utf-8" }, function(err, data) {
-      t.equal(data, '# This Is Served', "CodeTender replaced with Served");
-      fs.stat('./output/test-new/bar.js', function(err, stat1) {
-        fs.stat('./output/test-new/folder', function(err, stat2) {
-          fs.stat('./output/test-new/before.txt', function(err, stat3) {
-            t.ok(stat1 && stat1.isFile(), "foo replaced with bar");
-            t.ok(stat2 && stat2.isDirectory(), "sub replaced with folder");
-            t.ok(stat3 && stat3.isFile(), "before script runs");
-            rimraf('./output/test-new', t.end);
-          });
-        });
-      });
-    });
+    t.teardown(cleanupNew)
+    t.plan(6);
+    t.ok(checkContents('output/test-new/folder/README.md', '# This Is Served'));
+    t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
+    t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
+    t.ok(checkFile('output/test-new/before.txt'), "before script runs");
+    t.ok(checkFile('output/test-new/ignored-folder/foo.txt'), "ignored folders are ignored");
+    t.ok(checkContents('output/test-new/ignore-file.txt', 'foo'), "ignored files are ignored");
   }).catch(t.threw);
 });
 
@@ -82,25 +112,18 @@ t.test('CodeTender replace', function (t) {
           else {
             fs.writeFile('./output/test-replace/.git/foo.txt', 'foo', function(err2) {
               if (err2) {
-                t.threw(err);
+                cleanupReplace(err);
               }
               else
               {
                 codetender.replace(config).then(function() {
-                  fs.readFile('./output/test-replace/folder/README.md', { encoding: "utf-8" }, function(err, data) {
-                    t.equal(data, '# This Is Served', "CodeTender replaced with Served");
-                    fs.stat('./output/test-replace/bar.js', function(err, stat1) {
-                      fs.stat('./output/test-replace/folder', function(err, stat2) {
-                        fs.stat('./output/test-replace/.git/foo.txt', function(err, stat3) {
-                          t.ok(stat1 && stat1.isFile(), "foo replaced with bar");
-                          t.ok(stat2 && stat2.isDirectory(), "sub replaced with folder");
-                          t.ok(stat3 && stat3.isFile(), ".git is ignored");
-                          rimraf('./output/test-replace', t.end);
-                        });
-                      });
-                    });
-                  });
-                });
+                  t.teardown(cleanupReplace);
+                  t.plan(4);
+                  t.ok(checkContents('/output/test-replace/folder/README.md', '# This Is Served'));
+                  t.ok(checkFile('/output/test-replace/bar.js'), "foo replaced with bar");
+                  t.ok(checkDir('/output/test-replace/folder'), "sub replaced with folder");
+                  t.ok(checkFile('/output/test-replace/.git/foo.txt'), ".git is ignored");
+                }).catch(t.threw);
               }
             });
           }
