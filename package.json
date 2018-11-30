@@ -1,6 +1,6 @@
 {
   "name": "codetender",
-  "version": "0.0.3-alpha",
+  "version": "0.0.4-alpha",
   "description": "Codetender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
@@ -12,10 +12,10 @@
     "url": "https://github.com/douglampe/codetender/issues"
   },
   "bin": {
-    "codetender": "bin/codetender.js"
+    "codetender": "bin/codetender-cli.js"
   },
   "scripts": {
-    "test": "node test/common.js"
+    "test": "node test/codetender.js"
   },
   "preferGlobal": true,
   "dependencies": {
@@ -28,6 +28,7 @@
     "rimraf": "^2.6.1"
   },
   "devDependencies": {
+    "glob": "^7.1.3",
     "tap": "^12.0.1"
   }
 }

@@ -1,22 +1,24 @@
 {
   "tokens": [
     {
-      "pattern": "foo",
-      "prompt": "Replace every instance of \"foo\" with:"
+      "pattern": "foo"
     },
     {
       "pattern": "CodeTender",
-      "prompt": "Replace every instance of \"CodeTender\" with:"
+      "prompt": "Custom prompt to replace CodeTender:"
+    },
+    {
+      "pattern": "sub"
     }
   ],
   "ignore": [
     ".*",
-    "ignore-file*",
-    "ignore-folder/",
+    "**/ignore-file.txt",
+    "ignored-folder/",
     "**/find-me*"
   ],
   "scripts": {
-    "before": "./foo.js",
-    "after": "./foo.js"
+    "before": "node ./codetender-before.js",
+    "after": "node ./codetender-after.js"
   }
 }
