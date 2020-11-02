@@ -45,6 +45,10 @@ function CodeTender() {
       return deferred.promise;
     }
 
+    if (me.config.verbose) {
+      log('Verbose mode enabled.');
+    }
+
     runTasks([
       copyOrClone,
       readConfig,
@@ -88,17 +92,26 @@ function CodeTender() {
       {
         logger: console.log,
         tokens: [],
+        noReplace: [],
         ignore: [],
+        notReplacedFiles: {},
         ignoredFiles: {}
       }, 
       config
     );
 
     // Always ignore .git folder
+    if (me.config.noReplace.indexOf('.git/') === -1) {
+      me.config.noReplace.push('.git/');
+    }
     if (me.config.ignore.indexOf('.git/') === -1) {
       me.config.ignore.push('.git/');
     }
+
     // Always ignore the .codetender file
+    if (me.config.noReplace.indexOf('.codetender') === -1) {
+      me.config.noReplace.push('.codetender');
+    }
     if (me.config.ignore.indexOf('.codetender') === -1) {
       me.config.ignore.push('.codetender');
     }
@@ -121,6 +134,9 @@ function CodeTender() {
         me.config = Object.assign({}, fileConfig, me.config);
         if (me.config.tokens.length === 0 && fileConfig.tokens) {
           me.config.tokens = fileConfig.tokens;
+        }
+        if (fileConfig.noReplace) {
+          me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace); 
         }
         if (fileConfig.ignore) {
           me.config.ignore = me.config.ignore.concat(fileConfig.ignore); 
@@ -246,18 +262,46 @@ function CodeTender() {
     me.config.fromTokens = convertTokens(fromItems);
     me.config.toStrings = toStrings;
 
-    me.config.ignore.forEach(function(pattern) {
+    me.config.noReplace.forEach(function(pattern) {
       var d = q.defer();
       glob(pattern, { cwd: me.config.targetPath }, function(err, matches) {
-        if (matches) {
-          matches.forEach(function(match) {
-            me.config.ignoredFiles[path.resolve(me.config.targetPath, match)] = true;
-          });
+        if (err) {
+          deferred.reject(err);
         }
-        deferred.resolve();
+        else {
+          if (matches) {
+            matches.forEach(function(match) {
+              me.config.notReplacedFiles[path.resolve(me.config.targetPath, match)] = true;
+            });
+          }
+          deferred.resolve();
+        }
       });
       promises.push(d.promise);
     });
+
+    // If this is a local template, find all ignored files so they can
+    // be ignored.
+    if (me.config.isLocalTemplate)
+    {
+      me.config.ignore.forEach(function(pattern) {
+        var d = q.defer();
+        glob(pattern, { cwd: me.config.template }, function(err, matches) {
+          if (err) {
+            deferred.reject(err);
+          }
+          else {
+            if (matches) {
+              matches.forEach(function(match) {
+                me.config.ignoredFiles[path.resolve(me.config.targetPath, match)] = true;
+              });
+            }
+            deferred.resolve();
+          }
+        });
+        promises.push(d.promise);
+      });
+    }
 
     q.all(promises).then(deferred.resolve).catch(deferred.reject);
 
@@ -287,6 +331,7 @@ function CodeTender() {
     }
 
     if (fs.existsSync(template)) {
+      me.config.isLocalTemplate = true;
       copyFromFs(template, folder).then(function () {
         deferred.resolve();
       }).catch(deferred.reject);
@@ -315,7 +360,7 @@ function CodeTender() {
         deferred.reject(err);
       }
       // Copy from source to destination:
-      fsExtra.copy(from, to, function (err) {
+      fsExtra.copy(from, to, { filter: copyFilter }, function (err) {
         if (err) {
           deferred.reject(err);
         }
@@ -328,6 +373,19 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  function copyFilter(file) {
+    if (me.config.ingoreFiles.indexOf(file) === -1) {
+      if (me.config.verbose) {
+        log("Copying file " + file);
+      }
+      return true;
+    }
+    else {
+      log("Ignoring file " + file);
+      return false;
+    }
+  }
+
   /**
    * Clone git repository and detatch
    * @param {string} repo URL of git repository
@@ -337,8 +395,31 @@ function CodeTender() {
     var deferred = q.defer();
 
     clone(repo, folder, function () {
-      rimraf(path.join(folder, '.git'), deferred.resolve);
+      cleanupIgnored().then(deferred.resolve).catch(deferred.reject);
     });
+
+    return deferred.promise;
+  }
+
+  // Clean up ignored files after git clone
+  function cleanupIgnored() {
+    var deferred = q.defer(),
+        promises = [];
+
+    me.config.ignore.forEach(function(pattern) {    
+      var d = q.defer();
+        rimraf(path.join(me.config.targetPath, pattern), function(err) {
+          if (err) {
+            deferred.reject(err);
+          }
+          else {
+            deferred.resolve();
+          }
+        });
+        promises.push(d.promise);
+    });
+
+    q.all(promises).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -362,7 +443,7 @@ function CodeTender() {
 
     replaceInFile({
       files: [path + '/**/*.*'],
-      ignore: me.config.ignore,
+      noReplace: me.config.noReplace,
       from: fromTokens,
       to: toStrings
     }).then(deferred.resolve)
@@ -469,7 +550,7 @@ function CodeTender() {
   }
 
   // Check an item to determine if it is a folder. If it is a folder,
-  // process it. Otherwise ignore
+  // process it. Otherwise noReplace
   function processItem(itemPath, fromTokens, toStrings) {
     var deferred = q.defer();
 
@@ -498,10 +579,10 @@ function CodeTender() {
       i,
       item,
       promises = [],
-      ignore = me.config.ignore;
+      noReplace = me.config.noReplace;
 
-    // Don't replace anything in the ignored folders
-    if (me.config.ignoredFiles[folder]) {
+    // Don't replace anything in the noReplaced folders
+    if (me.config.notReplacedFiles[folder]) {
       deferred.resolve();
     }
     else {
