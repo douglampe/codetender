@@ -10,12 +10,21 @@ var t = require('tap'),
 process.chdir(__dirname); 
 
 function checkFile(file) {
+
+  if (!fs.existsSync(path.join(__dirname, file))) {
+    return false;
+  }
+  
   var stat = fs.statSync(path.join(__dirname, file));
 
   return stat && stat.isFile();
 }
 
 function checkDir(file) {
+  if (!fs.existsSync(path.join(__dirname, file))) {
+    return false;
+  }
+
   var stat = fs.statSync(path.join(__dirname, file));
 
   return stat && stat.isDirectory();
@@ -69,8 +78,8 @@ t.test('CodeTender new', function(t) {
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
     t.ok(checkFile('output/test-new/before.txt'), "before script runs");
-    t.ok(checkFile('output/test-new/ignored-folder/foo.txt'), "ignored folders are ignored");
-    t.ok(checkContents('output/test-new/ignore-file.txt', 'foo'), "ignored files are ignored");
+    t.notOk(checkFile('output/test-new/ignored-folder/foo.txt'), "ignored folders are ignored");
+    t.notOk(checkContents('output/test-new/ignore-file.txt', 'foo'), "ignored files are ignored");
   }).catch(t.threw);
 });
 
