@@ -40,21 +40,21 @@ function checkContents(file, expected) {
 }
 
 function cleanupNew(err) {
-  rimraf(path.join(__dirname, 'output/test-new'), function() {
-    if (err) {
-      t.threw(err);
-    }
-  });
+  // rimraf(path.join(__dirname, 'output/test-new'), function() {
+  //   if (err) {
+  //     t.threw(err);
+  //   }
+  // });
 }
 
 function cleanupReplace(err) {
-  rimraf(path.join(__dirname, 'output/test-replace'), function() {
-  });
+  //rimraf(path.join(__dirname, 'output/test-replace'), function() {
+  //});
 }
 
-t.test('CodeTender new', function(t) {
+function testNew(t) {
   codetender.new({
-    quiet: true,
+    verbose: true,
     template: 'sample', 
     folder: './output/test-new',
     tokens: [
@@ -73,20 +73,23 @@ t.test('CodeTender new', function(t) {
     ]
   }).then(function() {
     t.teardown(cleanupNew)
-    t.plan(6);
-    t.ok(checkContents('output/test-new/folder/README.md', '# This Is Served'));
+    t.plan(9);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
+    t.ok(checkContents('output/test-new/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), "foo, CodeTender, and sub all replaced");
     t.ok(checkFile('output/test-new/before.txt'), "before script runs");
     t.notOk(checkFile('output/test-new/ignored-folder/foo.txt'), "ignored folders are ignored");
-    t.notOk(checkContents('output/test-new/ignore-file.txt', 'foo'), "ignored files are ignored");
+    t.notOk(checkFile('output/test-new/ignore-file.txt'), "ignored files are ignored");
+    t.ok(checkContents('output/test-new/folder/README.md', '# The word "foo" in this file should not be changed'), "noReplace files are skipped");
+    t.ok(checkDir('output/test-new/noReplace-folder/sub', 'foo'), "noReplace folders are skipped");
+    t.ok(checkContents('output/test-new/noReplace-folder/sub/foo.txt', 'foo'), "noReplace folder contents are skipped");
   }).catch(t.threw);
-});
+}
 
-t.test('CodeTender replace', function (t) {
+function testReplace(t) {
   var template = 'sample',
       config = {
-        quiet: true,
+        verbose: true,
         folder: './output/test-replace',
         tokens: [
           {
@@ -104,21 +107,14 @@ t.test('CodeTender replace', function (t) {
         ]
       };
 
-  mkdirp(config.folder, function (err) {
-    if (err) {
-      t.threw(err);
-    }
+  mkdirp(config.folder).then(function () {
     // Copy from source to destination:
     fsExtra.copy(template, config.folder, function (err) {
       if (err) {
         t.threw(err);
       }
       else {
-        mkdirp('./output/test-replace/.git', function (err) {
-          if (err) {
-            t.threw(err);
-          }
-          else {
+        mkdirp('./output/test-replace/.git').then(function (err) {
             fs.writeFile('./output/test-replace/.git/foo.txt', 'foo', function(err2) {
               if (err2) {
                 cleanupReplace(err);
@@ -128,16 +124,19 @@ t.test('CodeTender replace', function (t) {
                 codetender.replace(config).then(function() {
                   t.teardown(cleanupReplace);
                   t.plan(4);
-                  t.ok(checkContents('/output/test-replace/folder/README.md', '# This Is Served'));
+                  t.ok(checkContents('/output/test-replace/folder/README.md', '# The word "bar" in this file should not be changed'));
                   t.ok(checkFile('/output/test-replace/bar.js'), "foo replaced with bar");
                   t.ok(checkDir('/output/test-replace/folder'), "sub replaced with folder");
-                  t.ok(checkFile('/output/test-replace/.git/foo.txt'), ".git is ignored");
+                  t.ok(checkContents('/output/test-replace/.git/foo.txt', 'foo'), ".git is ignored");
                 }).catch(t.threw);
               }
             });
-          }
-        });
+        }).catch(t.threw);
       }
     });
-  });
-});
+  }).catch(t.threw);
+}
+
+//t.test('CodeTender new', testNew);
+
+t.test('CodeTender replace', testReplace);

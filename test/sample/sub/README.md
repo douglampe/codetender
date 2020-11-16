@@ -1,1 +1,1 @@
-# This Is CodeTender
+# The word "foo" in this file should not be changed

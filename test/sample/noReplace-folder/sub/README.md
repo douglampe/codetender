@@ -1,0 +1,1 @@
+# The name of this folder should remain unchanged and the text "foo" should not be replaced in this file

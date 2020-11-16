@@ -13,9 +13,12 @@
   ],
   "ignore": [
     ".*",
-    "**/ignore-file.txt",
     "ignored-folder/",
-    "**/find-me*"
+    "**/ignore-file.txt"
+  ],
+  "noReplace": [
+    "**/README.md",
+    "noReplace-folder/"
   ],
   "scripts": {
     "before": "node ./codetender-before.js",

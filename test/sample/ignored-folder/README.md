@@ -1,1 +1,1 @@
-# This folder should be ignored
+# This folder should not be copied to the target path

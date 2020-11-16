@@ -12,50 +12,47 @@ var fs = require('fs'),
 
   replaceInFile = require('replace-in-file');
 
-module.exports = { 
-  new: function(config) { 
+module.exports = {
+  new: function (config) {
     var codetender = new CodeTender();
-    return codetender.new(config); 
+    return codetender.new(config);
   },
-  replace: function(config) {
+  replace: function (config) {
     var codetender = new CodeTender();
-    return codetender.replace(config); 
+    return codetender.replace(config);
   }
 };
 
 function CodeTender() {
   var me = this;
-  
+
   me.new = newFromTemplate;
   me.replace = replace;
 
   /**
-   * Copies a template defined by config.tempalte to a folder defined by config.folder
-   * and replacee tokens as specified by either the comand line or configuration.
+   * Copies a template defined by config.template to a folder defined by config.folder
+   * and replaced tokens as specified by either the command line or configuration.
    * @param {object} config 
    */
   function newFromTemplate(config) {
     var deferred = q.defer();
-    
-    intitConfig(config);
+
+    initConfig(config);
 
     if (fs.existsSync(me.config.targetPath)) {
-      log('Folder ' + me.config.folder + ' already exists. Please specify a valid name for a new folder.');
+      log('Folder ' + me.config.folder + ' already exists. Please specify a valid name for a new folder or use "codetender replace" to replace tokens in existing files.');
       deferred.reject();
       return deferred.promise;
-    }
-
-    if (me.config.verbose) {
-      log('Verbose mode enabled.');
     }
 
     runTasks([
       copyOrClone,
       readConfig,
+      cleanupIgnored,
       getTokens,
       prepTokens,
       runBeforeScript,
-      replaceTokens,
+      // replaceTokens,
       renameAllFiles,
       runAfterScript,
       splash,
@@ -66,19 +63,19 @@ function CodeTender() {
     return deferred.promise;
   }
 
-    /**
-   * Replaces tokens as specified by either the comand line or configuration.
-   * @param {object} config 
-   */
+  /**
+ * Replaces tokens as specified by either the command line or configuration.
+ * @param {object} config 
+ */
   function replace(config) {
     var deferred = q.defer();
 
-    intitConfig(config);
+    initConfig(config);
 
     runTasks([
       getTokens,
       prepTokens,
-      replaceTokens,
+      // replaceTokens,
       renameAllFiles,
       splash,
       logTokenSuccess
@@ -87,7 +84,7 @@ function CodeTender() {
     return deferred.promise;
   }
 
-  function intitConfig(config) {
+  function initConfig(config) {
     me.config = Object.assign(
       {
         logger: console.log,
@@ -96,9 +93,11 @@ function CodeTender() {
         ignore: [],
         notReplacedFiles: {},
         ignoredFiles: {}
-      }, 
+      },
       config
     );
+
+    verboseLog("Initial config: " + JSON.stringify(me.config, null, 2));
 
     // Always ignore .git folder
     if (me.config.noReplace.indexOf('.git/') === -1) {
@@ -117,30 +116,38 @@ function CodeTender() {
     }
 
     me.config.targetPath = path.resolve(config.folder);
+
+    verboseLog("Final config: " + JSON.stringify(me.config, null, 2));
   }
 
   function readConfig() {
     var deferred = q.defer(),
-        fileConfig;
+      fileConfig;
 
-    fs.readFile(path.join(me.config.targetPath, ".codetender"), { encoding: "utf-8" }, function(err, data) {
+    fs.readFile(path.join(me.config.targetPath, ".codetender"), { encoding: "utf-8" }, function (err, data) {
       if (err) {
         // If we get an error, assume it is because the config doesn't exist and continue:
         deferred.resolve();
       }
       else {
+        verboseLog("Reading config from .codetener file...");
+        verboseLog("  Contents of .codetender file: " + data)
+
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens,
-        me.config = Object.assign({}, fileConfig, me.config);
+          me.config = Object.assign({}, fileConfig, me.config);
         if (me.config.tokens.length === 0 && fileConfig.tokens) {
           me.config.tokens = fileConfig.tokens;
         }
         if (fileConfig.noReplace) {
-          me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace); 
+          me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace);
         }
         if (fileConfig.ignore) {
-          me.config.ignore = me.config.ignore.concat(fileConfig.ignore); 
+          me.config.ignore = me.config.ignore.concat(fileConfig.ignore);
         }
+
+        verboseLog("Config after reading .codetender file: " + JSON.stringify(me.config, null, 2));
+
         deferred.resolve();
       }
     });
@@ -150,21 +157,27 @@ function CodeTender() {
 
   function getTokens() {
     var missingValues,
-        tokens = me.config.tokens;
+      tokens = me.config.tokens;
 
     if (tokens.length === 0) {
+      verboseLog("Reading tokens from command line...");
+
       return getTokensFromCommandLine();
     }
     else {
-      tokens.forEach(function(token) {
+      tokens.forEach(function (token) {
         if (!token.replacement) {
           missingValues = true;
         }
       });
       if (missingValues) {
+        verboseLog("Reading token values from command line...");
+
         return getTokensFromPrompts();
       }
       else {
+        verboseLog("All token replacements already provided.");
+
         return Promise.resolve();
       }
     }
@@ -175,8 +188,8 @@ function CodeTender() {
    */
   function getTokensFromCommandLine() {
     var deferred = q.defer(),
-    tokens = me.config.tokens,
-    newToken;
+      tokens = me.config.tokens,
+      newToken;
 
     ask('Token to replace [done]: ').then(function (newFrom) {
       if (newFrom !== '') {
@@ -202,23 +215,23 @@ function CodeTender() {
 
   function getTokensFromPrompts() {
     var deferred = q.defer(),
-        prompts = [];
+      prompts = [];
 
-    me.config.tokens.forEach(function(token) {
-      prompts.push(function() {
+    me.config.tokens.forEach(function (token) {
+      prompts.push(function () {
         return getTokenFromPrompt(token);
       });
     });
 
     runTasks(prompts).then(deferred.resolve).catch(deferred.reject);
-    
+
     return deferred.promise;
   }
 
   function getTokenFromPrompt(token) {
     var deferred = q.defer();
 
-    ask(token.prompt || 'Replace all instances of "' + token.pattern + '" with [abort]:').then(function(response) {
+    ask(token.prompt || 'Replace all instances of "' + token.pattern + '" with [abort]:').then(function (response) {
       if (response === '') {
         deferred.reject();
       }
@@ -233,10 +246,10 @@ function CodeTender() {
 
   function ask(prompt) {
     var deferred = q.defer(),
-        rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout
-        });
+      rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
 
     rl.question(prompt, function (response) {
       deferred.resolve(response);
@@ -249,11 +262,12 @@ function CodeTender() {
   // Convert tokens to regular expressions and create arrays for external calls
   function prepTokens() {
     var deferred = q.defer(),
-        tokens = me.config.tokens,
-        fromItems = [],
-        toStrings = [],
-        promises = [];
-    
+      tokens = me.config.tokens,
+      fromItems = [],
+      toStrings = [],
+      promises = [],
+      skipPath;
+
     tokens.forEach(function (token) {
       fromItems.push(token.pattern);
       toStrings.push(token.replacement);
@@ -262,41 +276,26 @@ function CodeTender() {
     me.config.fromTokens = convertTokens(fromItems);
     me.config.toStrings = toStrings;
 
-    me.config.noReplace.forEach(function(pattern) {
-      var d = q.defer();
-      glob(pattern, { cwd: me.config.targetPath }, function(err, matches) {
-        if (err) {
-          deferred.reject(err);
-        }
-        else {
-          if (matches) {
-            matches.forEach(function(match) {
-              me.config.notReplacedFiles[path.resolve(me.config.targetPath, match)] = true;
-            });
-          }
-          deferred.resolve();
-        }
-      });
-      promises.push(d.promise);
-    });
+    if (me.config.noReplace.length < 1) {
+      verboseLog("No globs specified to skip token replacement.");
+    } else {
+      verboseLog("Processing globs specified to skip token replacement...");
 
-    // If this is a local template, find all ignored files so they can
-    // be ignored.
-    if (me.config.isLocalTemplate)
-    {
-      me.config.ignore.forEach(function(pattern) {
+      me.config.noReplace.forEach(function (pattern) {
         var d = q.defer();
-        glob(pattern, { cwd: me.config.template }, function(err, matches) {
+        glob(pattern, { cwd: me.config.targetPath }, function (err, matches) {
           if (err) {
-            deferred.reject(err);
+            d.reject(err);
           }
           else {
             if (matches) {
-              matches.forEach(function(match) {
-                me.config.ignoredFiles[path.resolve(me.config.targetPath, match)] = true;
+              matches.forEach(function (match) {
+                skipPath = path.resolve(me.config.targetPath, match);
+                me.config.notReplacedFiles[skipPath] = true;
+                verboseLog("  Skip path: " + skipPath);
               });
             }
-            deferred.resolve();
+            d.resolve();
           }
         });
         promises.push(d.promise);
@@ -311,6 +310,9 @@ function CodeTender() {
   // Run the before script if it exists
   function runBeforeScript() {
     if (me.config.scripts && me.config.scripts.before) {
+
+      verboseLog("Running before script...");
+
       return runChildProcess(me.config.scripts.before);
     }
     else {
@@ -323,25 +325,25 @@ function CodeTender() {
    */
   function copyOrClone() {
     var deferred = q.defer(),
-        template = me.config.template,
-        folder = me.config.targetPath;
+      template = me.config.template,
+      folder = me.config.targetPath;
 
-    if (!me.config.quiet) {
-      log('Cloning template ' + template + ' into folder ' + folder);
-    }
+    log('Cloning template ' + template + ' into folder ' + folder);
 
     if (fs.existsSync(template)) {
+      verboseLog('Local template found in path: ' + template);
+
       me.config.isLocalTemplate = true;
-      copyFromFs(template, folder).then(function () {
-        deferred.resolve();
-      }).catch(deferred.reject);
+      copyFromFs(template, folder).then(deferred.resolve).catch(deferred.reject);
     }
     else {
-      if (!template.match(/.+\.git/g)) {
-        template = template + '.git';
-      }
       if (!template.match(/http.+/g)) {
         template = 'https://github.com/' + template;
+        verboseLog('Added https prefix to template: ' + template);
+      }
+      if (!template.match(/.+\.git/g)) {
+        template = template + '.git';
+        verboseLog('Added git extension to template: ' + template);
       }
       gitClone(template, folder).then(function () {
         deferred.resolve();
@@ -350,17 +352,16 @@ function CodeTender() {
     return deferred.promise;
   }
 
-   // Copy template from local file system
+  // Copy template from local file system
   function copyFromFs(from, to) {
     var deferred = q.defer();
 
     // Create destination folder if it doesn't exist:
-    mkdirp(to, function (err) {
-      if (err) {
-        deferred.reject(err);
-      }
+    verboseLog("  Creating folder: " + to);
+    mkdirp(to).then(function () {
       // Copy from source to destination:
-      fsExtra.copy(from, to, { filter: copyFilter }, function (err) {
+      verboseLog("  Copying from: " + from);
+      fsExtra.copy(from, to, {}, function (err) {
         if (err) {
           deferred.reject(err);
         }
@@ -368,34 +369,23 @@ function CodeTender() {
           deferred.resolve();
         }
       });
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
 
-  function copyFilter(file) {
-    if (me.config.ingoreFiles.indexOf(file) === -1) {
-      if (me.config.verbose) {
-        log("Copying file " + file);
-      }
-      return true;
-    }
-    else {
-      log("Ignoring file " + file);
-      return false;
-    }
-  }
-
   /**
-   * Clone git repository and detatch
+   * Clone git repository and detach
    * @param {string} repo URL of git repository
    * @param {string} folder folder to clone into
    */
   function gitClone(repo, folder) {
     var deferred = q.defer();
 
+    verboseLog("Cloning from repo:" + repo);
+    verboseLog("  to: " + folder);
     clone(repo, folder, function () {
-      cleanupIgnored().then(deferred.resolve).catch(deferred.reject);
+      deferred.resolve();
     });
 
     return deferred.promise;
@@ -404,11 +394,20 @@ function CodeTender() {
   // Clean up ignored files after git clone
   function cleanupIgnored() {
     var deferred = q.defer(),
-        promises = [];
+      promises = [];
 
-    me.config.ignore.forEach(function(pattern) {    
-      var d = q.defer();
-        rimraf(path.join(me.config.targetPath, pattern), function(err) {
+    if (me.config.ignore.length < 1) {
+      verboseLog("No files or folders to ignore.");
+      deferred.resolve();
+    }
+    else {
+      verboseLog("Removing ignored files from cloned repository...");
+      me.config.ignore.forEach(function (pattern) {
+        var d = q.defer();
+
+        verboseLog("  Removing: " + pattern);
+
+        rimraf(path.join(me.config.targetPath, pattern), function (err) {
           if (err) {
             deferred.reject(err);
           }
@@ -417,23 +416,21 @@ function CodeTender() {
           }
         });
         promises.push(d.promise);
-    });
+      });
 
-    q.all(promises).then(deferred.resolve).catch(deferred.reject);
+      q.all(promises).then(deferred.resolve).catch(deferred.reject);
+    }
 
     return deferred.promise;
   }
 
-   // Replace tokens in file contents
+  // Replace tokens in file contents
   function replaceTokens() {
     var deferred = q.defer(),
       path = me.config.targetPath,
       fromTokens = me.config.fromTokens,
-      toStrings = me.config.toStrings;
-      
-    if (!me.config.quiet) {
-      log('Replacing tokens in  folder ' + path);
-    }
+      toStrings = me.config.toStrings,
+      folderGlob = path + '/**/*.*';
 
     if (!fromTokens) {
       oops('Tokens to replace must be either a string or RegExp.');
@@ -441,15 +438,15 @@ function CodeTender() {
       return deferred.promise;
     }
 
+    verboseLog('Replacing tokens in glob: ' + folderGlob);
+    verboseLog('  ignoring: ' + JSON.stringify(me.config.noReplace, null, 2));
+
     replaceInFile({
-      files: [path + '/**/*.*'],
-      noReplace: me.config.noReplace,
+      files: [folderGlob],
+      ignore: me.config.noReplace,
       from: fromTokens,
       to: toStrings
-    }).then(deferred.resolve)
-      .catch(err => {
-        deferred.reject(err);
-      });
+    }).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -460,16 +457,21 @@ function CodeTender() {
       i,
       item;
 
-    for (i = 0; i < tokenStrings.length; i++) {
-      item = tokenStrings[i];
-      if (typeof item === 'string') {
-        tokens.push(convertStringToToken(item));
-      }
-      else if (item instanceof RegExp) {
-        tokens.push(item);
-      }
-      else {
-        return;
+    if (tokenStrings.length > 0) {
+
+      verboseLog("Converting any string tokens to RegExp...");
+
+      for (i = 0; i < tokenStrings.length; i++) {
+        item = tokenStrings[i];
+        if (typeof item === 'string') {
+          tokens.push(convertStringToToken(item));
+        }
+        else if (item instanceof RegExp) {
+          tokens.push(item);
+        }
+        else {
+          return;
+        }
       }
     }
 
@@ -481,7 +483,7 @@ function CodeTender() {
     return new RegExp(tokenString.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
   }
 
-   // Rename files and folders
+  // Rename files and folders
   function renameAllFiles() {
     var deferred = q.defer(),
       i,
@@ -494,9 +496,7 @@ function CodeTender() {
       return deferred.promise;
     }
 
-    processFolder(folder, fromTokens, toStrings).then(function () {
-      deferred.resolve();
-    }).catch(deferred.reject);
+    processFolder(folder, fromTokens, toStrings).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -540,49 +540,53 @@ function CodeTender() {
       promises.push(processItem(itemPath, fromTokens, toStrings));
     }
 
-    q.all(promises).then(function () {
-      deferred.resolve();
-    }).catch(function (err) {
-      deferred.reject(err);
-    });
+    q.all(promises).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
   }
 
   // Check an item to determine if it is a folder. If it is a folder,
-  // process it. Otherwise noReplace
+  // process it. Otherwise ignore.
   function processItem(itemPath, fromTokens, toStrings) {
     var deferred = q.defer();
 
-    fs.stat(itemPath, function (err, stat) {
-      if (err) {
-        deferred.reject(err);
-      }
-      else {
-        if (stat.isDirectory()) {
-          processFolder(itemPath, fromTokens, toStrings).then(function () {
-            deferred.resolve();
-          }).catch(deferred.reject);
+    if (me.config.notReplacedFiles[itemPath]) {
+      verboseLog("Skipping item marked for noReplace: " + itemPath);
+      deferred.resolve();
+    } else {
+      fs.stat(itemPath, function (err, stat) {
+        if (err) {
+          deferred.reject(err);
         }
         else {
-          deferred.resolve();
+          if (stat.isDirectory()) {
+            processFolder(itemPath, fromTokens, toStrings).then(deferred.resolve).catch(deferred.reject);
+          }
+          else if (!me.config.notReplacedFiles[itemPath]) {
+            verboseLog("Replacing tokens in:" + itemPath);
+            replaceInFile({
+              files: itemPath,
+              from: fromTokens,
+              to: toStrings
+            }).then(deferred.resolve).catch(deferred.reject);
+          }
         }
-      }
-    });
+      });
+    }
 
     return deferred.promise;
   }
 
   // Rename all items in the specified folder
-    function renameItems(folder, contents, fromTokens, toStrings) {
+  function renameItems(folder, contents, fromTokens, toStrings) {
     var deferred = q.defer(),
       i,
       item,
-      promises = [],
-      noReplace = me.config.noReplace;
+      promises = [];
 
     // Don't replace anything in the noReplaced folders
     if (me.config.notReplacedFiles[folder]) {
+      verboseLog("Skipping folder tagged as noReplace: " + folder);
       deferred.resolve();
     }
     else {
@@ -591,11 +595,7 @@ function CodeTender() {
         promises.push(rename(folder, item, fromTokens, toStrings));
       }
 
-      q.all(promises).then(function () {
-        deferred.resolve();
-      }).catch(function (err) {
-        deferred.reject(err);
-      });
+      q.all(promises).then(deferred.resolve).catch(deferred.reject);
     }
 
     return deferred.promise;
@@ -620,14 +620,24 @@ function CodeTender() {
 
     newFile = path.join(folder, item);
 
-    fs.rename(oldFile, newFile, function (err) {
-      if (err) {
-        deferred.reject(err);
-      }
-      else {
+    if (newFile !== oldFile) {
+      if (me.config.notReplacedFiles[oldFile]) {
+        verboseLog("Skipping file marked noReplace: " + oldFile);
         deferred.resolve();
       }
-    });
+      else {
+        fs.rename(oldFile, newFile, function (err) {
+          if (err) {
+            deferred.reject(err);
+          }
+          else {
+            deferred.resolve();
+          }
+        });
+      }
+    } else {
+      deferred.resolve();
+    }
 
     return deferred.promise;
   }
@@ -635,6 +645,8 @@ function CodeTender() {
   // Run the after script if present
   function runAfterScript() {
     if (me.config.scripts && me.config.scripts.after) {
+      verboseLog("Running after script...");
+
       return runChildProcess(me.config.scripts.after);
     }
     else {
@@ -646,7 +658,9 @@ function CodeTender() {
   function runChildProcess(command) {
     var deferred = q.defer();
 
-    exec(command, { cwd: me.config.targetPath }, function(err) {
+    verboseLog("  Running command: " + command);
+
+    exec(command, { cwd: me.config.targetPath }, function (err) {
       if (err) {
         oops(err);
         deferred.reject(err);
@@ -681,10 +695,10 @@ function CodeTender() {
   // Run a series of promises in sync
   function runTasks(tasks) {
     var result = Promise.resolve(),
-        failed,
-        err;
-    
-    tasks.forEach(function(task) {
+      failed,
+      err;
+
+    tasks.forEach(function (task) {
       result = result.then(task).catch(function (err) {
         oops(err);
         err = err;
@@ -697,6 +711,12 @@ function CodeTender() {
     }
     else {
       return result;
+    }
+  }
+
+  function verboseLog(output) {
+    if (me.config.verbose) {
+      log(output);
     }
   }
 
@@ -716,7 +736,7 @@ function CodeTender() {
     log('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
     log('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
     log('');
-    
+
     return Promise.resolve();
   }
 
@@ -732,5 +752,6 @@ function CodeTender() {
     log('\\____/\\____/ .___/____(_)');
     log('          /_/ ');
     log(err);
+    process.exit();
   }
 }
