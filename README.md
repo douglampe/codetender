@@ -87,7 +87,8 @@ In the example below, the user would first be prompted: `Enter the name of you p
 
 Codetender supports ignoring files via the `.codetender` configuration. This is particularly useful when using a local
 folder as a template since you may want to ignore compiled output, external modules, etc. The `ignore` config expects
- an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be ignored.
+an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be ignored and will not be 
+copied to the destination folder.
 
 ````
   "ignore": [
@@ -95,6 +96,19 @@ folder as a template since you may want to ignore compiled output, external modu
       "ignore_this_file.txt"
   ]
 ````
+
+### Files Skipped by Token Replacement
+
+Codetender supports skipping token replacement via the `.codetender` configuration. This is useful for template content
+such as scripts or README files which you may want to remain intact after token replacement.
+
+````
+  "noReplace": [
+      "do_not_replace_tokens_in_this_folder/",
+      "do_not_replace_tokens_in_this_file.txt"
+  ]
+````
+
 ### Scripts
 
 Codetender supports execution of scripts before or after token replacement. The `before` script is executed after the 
