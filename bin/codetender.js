@@ -328,10 +328,9 @@ function CodeTender() {
       template = me.config.template,
       folder = me.config.targetPath;
 
-    log('Cloning template ' + template + ' into folder ' + folder);
-
     if (fs.existsSync(template)) {
-      verboseLog('Local template found in path: ' + template);
+      log('Local template found in path: ' + template);
+      log('  Cloning from template ' + template + ' into folder ' + folder);
 
       me.config.isLocalTemplate = true;
       copyFromFs(template, folder).then(deferred.resolve).catch(deferred.reject);
@@ -382,8 +381,8 @@ function CodeTender() {
   function gitClone(repo, folder) {
     var deferred = q.defer();
 
-    verboseLog("Cloning from repo:" + repo);
-    verboseLog("  to: " + folder);
+    log("Cloning from repo: " + repo);
+    log("  to: " + folder);
     clone(repo, folder, function () {
       deferred.resolve();
     });
@@ -563,7 +562,7 @@ function CodeTender() {
             processFolder(itemPath, fromTokens, toStrings).then(deferred.resolve).catch(deferred.reject);
           }
           else if (!me.config.notReplacedFiles[itemPath]) {
-            verboseLog("Replacing tokens in:" + itemPath);
+            verboseLog("Replacing tokens in: " + itemPath);
             replaceInFile({
               files: itemPath,
               from: fromTokens,
