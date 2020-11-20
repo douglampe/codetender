@@ -57,7 +57,8 @@ function CodeTender() {
       runAfterScript,
       splash,
       logCloneSuccess,
-      logTokenSuccess
+      logTokenSuccess,
+      banner
     ]).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
@@ -736,6 +737,27 @@ function CodeTender() {
     log('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
     log('');
 
+    return Promise.resolve();
+  }
+
+  /**
+   * Display banner if found in config
+   */
+  function banner() {
+    if (me.config.banner) {
+
+      log("");
+
+      if (Array.isArray(me.config.banner)) {
+        me.config.banner.forEach(function(line) {
+          log(line);
+        });
+      }
+      else {
+        log(me.config.banner);
+      }
+    }
+  
     return Promise.resolve();
   }
 

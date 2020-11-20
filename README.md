@@ -121,3 +121,21 @@ performed.
     "after": "node ./codetender-after.js"
   }
 ````
+
+### Banners
+
+Codetender supports banner messages which can be displayed after a template is processed. The `banner` value can either
+be a single string or an array of strings and will be logged after all processing of the template is complete.
+Feel free to use same text font used by Codetender which can be generated at http://patorjk.com/software/taag/ using 
+the "Small Slant" font.
+
+````
+  "banner": [
+    "This is a banner.",
+    "You can use it to display instructions, etc. after your template is processed.",
+    "Make sure to escape backslashes with double backslashes like this:",
+    "  _____        __    __              __       "
+    " / ___/__  ___/ /__ / /____ ___  ___/ /__ ____"
+    "/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/"
+    "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
+  ]
