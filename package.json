@@ -1,6 +1,6 @@
 {
   "name": "codetender",
-  "version": "0.0.9-alpha",
+  "version": "0.0.92.4-alpha",
   "description": "Codetender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
@@ -24,6 +24,7 @@
     "glob": "^7.1.6",
     "mkdirp": "^1.0.4",
     "node-fs-extra": "^0.8.2",
+    "graceful-fs": "^4.2.4",
     "q": "^1.5.1",
     "replace-in-file": "^6.1.0",
     "rimraf": "^3.0.2"
