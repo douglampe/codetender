@@ -52,7 +52,6 @@ function CodeTender() {
       getTokens,
       prepTokens,
       runBeforeScript,
-      // replaceTokens,
       renameAllFiles,
       runAfterScript,
       splash,
@@ -65,9 +64,9 @@ function CodeTender() {
   }
 
   /**
- * Replaces tokens as specified by either the command line or configuration.
- * @param {object} config 
- */
+   * Replaces tokens as specified by either the command line or configuration.
+   * @param {object} config 
+   */
   function replace(config) {
     var deferred = q.defer();
 
@@ -76,7 +75,6 @@ function CodeTender() {
     runTasks([
       getTokens,
       prepTokens,
-      // replaceTokens,
       renameAllFiles,
       splash,
       logTokenSuccess
@@ -85,6 +83,10 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  /**
+   * Initialize configuration
+   * @param {object} config 
+   */
   function initConfig(config) {
     me.config = Object.assign(
       {
@@ -121,6 +123,9 @@ function CodeTender() {
     verboseLog("Final config: " + JSON.stringify(me.config, null, 2));
   }
 
+  /**
+   * Read configuration from the .codetender file from the root folder of the template.
+   */
   function readConfig() {
     var deferred = q.defer(),
       fileConfig;
@@ -156,6 +161,9 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  /**
+   * Read tokens to replace and values from the command line.
+   */
   function getTokens() {
     var missingValues,
       tokens = me.config.tokens;
@@ -214,6 +222,9 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  /**
+   * Read token values based on prompts provided in configuration.
+   */
   function getTokensFromPrompts() {
     var deferred = q.defer(),
       prompts = [];
@@ -229,6 +240,10 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  /**
+   * Read a the value for a single token from the command line.
+   * @param {object} token 
+   */
   function getTokenFromPrompt(token) {
     var deferred = q.defer();
 
@@ -245,6 +260,10 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  /**
+   * Read a single value from the command line
+   * @param {string} prompt 
+   */
   function ask(prompt) {
     var deferred = q.defer(),
       rl = readline.createInterface({
@@ -420,33 +439,6 @@ function CodeTender() {
 
       q.all(promises).then(deferred.resolve).catch(deferred.reject);
     }
-
-    return deferred.promise;
-  }
-
-  // Replace tokens in file contents
-  function replaceTokens() {
-    var deferred = q.defer(),
-      path = me.config.targetPath,
-      fromTokens = me.config.fromTokens,
-      toStrings = me.config.toStrings,
-      folderGlob = path + '/**/*.*';
-
-    if (!fromTokens) {
-      oops('Tokens to replace must be either a string or RegExp.');
-      deferred.reject();
-      return deferred.promise;
-    }
-
-    verboseLog('Replacing tokens in glob: ' + folderGlob);
-    verboseLog('  ignoring: ' + JSON.stringify(me.config.noReplace, null, 2));
-
-    replaceInFile({
-      files: [folderGlob],
-      ignore: me.config.noReplace,
-      from: fromTokens,
-      to: toStrings
-    }).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -714,12 +706,14 @@ function CodeTender() {
     }
   }
 
+  // Log provided output only if verbose is enabled
   function verboseLog(output) {
     if (me.config.verbose) {
       log(output);
     }
   }
 
+  // Log provided output unless quiet mode is enabled
   function log(output) {
     if (!me.config.quiet) {
       me.config.logger(output);
