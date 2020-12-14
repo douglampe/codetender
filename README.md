@@ -54,10 +54,23 @@ including the `.codetender` configuration. The format of the `.codetender` confi
   "ignore": [
     "string"
   ],
+  "noReplace": [
+      "do_not_replace_tokens_in_this_folder/",
+      "do_not_replace_tokens_in_this_file.txt"
+  ],
   "scripts": {
     "before": "string",
     "after": "string"
-  }
+  },
+  "banner": [
+    "This is a banner.",
+    "You can use it to display instructions, etc. after your template is processed.",
+    "Make sure to escape backslashes with double backslashes like this:",
+    "  _____        __    __              __       "
+    " / ___/__  ___/ /__ / /____ ___  ___/ /__ ____"
+    "/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/"
+    "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
+  ]
 }
 ````
 
