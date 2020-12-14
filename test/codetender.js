@@ -40,16 +40,16 @@ function checkContents(file, expected) {
 }
 
 function cleanupNew(err) {
-  // rimraf(path.join(__dirname, 'output/test-new'), function() {
-  //   if (err) {
-  //     t.threw(err);
-  //   }
-  // });
+  rimraf(path.join(__dirname, 'output/test-new'), function() {
+    if (err) {
+      t.threw(err);
+    }
+  });
 }
 
 function cleanupReplace(err) {
-  //rimraf(path.join(__dirname, 'output/test-replace'), function() {
-  //});
+  rimraf(path.join(__dirname, 'output/test-replace'), function() {
+  });
 }
 
 function testNew(t) {
@@ -137,6 +137,6 @@ function testReplace(t) {
   }).catch(t.threw);
 }
 
-//t.test('CodeTender new', testNew);
+t.test('CodeTender new', testNew);
 
 t.test('CodeTender replace', testReplace);
