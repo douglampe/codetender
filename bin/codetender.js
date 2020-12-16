@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var fs = require('graceful-fs'),
-  fsExtra = require('node-fs-extra'),
+  fsExtra = require('fs-extra'),
   path = require('path'),
   readline = require('readline'),
   q = require('q'),

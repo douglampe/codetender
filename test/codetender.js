@@ -1,7 +1,7 @@
 var t = require('tap'),
   fs = require('fs'),
   rimraf = require('rimraf'),
-  fsExtra = require('node-fs-extra'),
+  fsExtra = require('fs-extra'),
   mkdirp = require('mkdirp'),
   path = require('path'),
   codetender = require('../bin/codetender.js'),
