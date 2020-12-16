@@ -60,7 +60,7 @@ function testNew(t) {
     file: 'sample/codetender.json',
   }).then(function() {
     t.teardown(cleanupNew)
-    t.plan(9);
+    t.plan(11);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
     t.ok(checkContents('output/test-new/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), "foo, CodeTender, and sub all replaced");
@@ -70,6 +70,8 @@ function testNew(t) {
     t.ok(checkContents('output/test-new/folder/README.md', '# The word "foo" in this file should not be changed'), "noReplace files are skipped");
     t.ok(checkDir('output/test-new/noReplace-folder/sub', 'foo'), "noReplace folders are skipped");
     t.ok(checkContents('output/test-new/noReplace-folder/sub/foo.txt', 'foo'), "noReplace folder contents are skipped");
+    t.ok(checkContents('/output/test-new/before.txt', 'bar'), "before script works");
+    t.ok(checkContents('/output/test-new/after.txt', 'foo'), "after script works");
   }).catch(t.threw);
 }
 
@@ -80,6 +82,10 @@ function testReplace(t) {
         folder: './output/test-replace',
         file: 'sample/codetender.json',
         tokens: [
+          {
+            pattern: 'CodeTender',
+            prompt: 'This should be ignored based on -f'
+          },
           {
             pattern: 'foo',
             replacement: 'bar'

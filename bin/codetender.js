@@ -158,20 +158,54 @@ function CodeTender() {
         }
       }
       else {
-        verboseLog("Reading config from file " + file  + "...");
+        verboseLog("Reading config from file " + file + "...");
         verboseLog("  Contents of " + file + ": " + data)
 
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens,
           me.config = Object.assign({}, fileConfig, me.config);
+
+        // Merge tokens
         if (fileConfig.tokens) {
-          me.config.tokens = me.config.tokens.concat(fileConfig.tokens);
+          fileConfig.tokens.forEach(function (fileToken) {
+            let token = me.config.tokens.find(t => t.pattern === fileToken.pattern);
+            if (token) {
+              if (fileToken.prompt) {
+                token.prompt = fileToken.prompt;
+              }
+              if (fileToken.replacement) {
+                token.replacement = fileToken.replacement;
+              }
+            }
+            else {
+              me.config.tokens.push(fileToken);
+            }
+          });
         }
+
+        // Merge scripts
+        if (fileConfig.scripts) {
+          if (fileConfig.scripts.before) {
+            me.config.scripts.before = fileConfig.scripts.before;
+          }
+          if (fileConfig.scripts.after) {
+            me.config.scripts.after = fileConfig.scripts.after;
+          }
+        }
+
+        // Append noReplace
         if (fileConfig.noReplace) {
           me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace);
         }
+
+        // Append ignore
         if (fileConfig.ignore) {
           me.config.ignore = me.config.ignore.concat(fileConfig.ignore);
+        }
+
+        // Append banner
+        if (fileConfig.banner) {
+          me.config.banner = me.config.banner.concat(fileConfig.banner);
         }
 
         verboseLog("Config after reading file " + file + ": " + JSON.stringify(me.config, null, 2));
@@ -239,7 +273,7 @@ function CodeTender() {
       else {
         deferred.resolve();
       }
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -277,7 +311,7 @@ function CodeTender() {
         token.replacement = response;
         deferred.resolve();
       }
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -296,7 +330,7 @@ function CodeTender() {
     rl.question(prompt, function (response) {
       deferred.resolve(response);
       rl.close();
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -640,6 +674,7 @@ function CodeTender() {
         deferred.resolve();
       }
       else {
+        verboseLog("Renmaing file " + oldFile + " to " + newFile);
         fs.rename(oldFile, newFile, function (err) {
           if (err) {
             deferred.reject(err);
@@ -765,7 +800,7 @@ function CodeTender() {
       log("");
 
       if (Array.isArray(me.config.banner)) {
-        me.config.banner.forEach(function(line) {
+        me.config.banner.forEach(function (line) {
           log(line);
         });
       }
@@ -773,7 +808,7 @@ function CodeTender() {
         log(me.config.banner);
       }
     }
-  
+
     return Promise.resolve();
   }
 

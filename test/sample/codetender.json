@@ -3,6 +3,10 @@
     {
       "pattern": "CodeTender",
       "replacement": "Served"
+    },
+    {
+      "pattern": "foo",
+      "replacement": "bar"
     }
   ]
 }

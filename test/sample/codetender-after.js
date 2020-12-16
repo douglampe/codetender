@@ -1,3 +1,3 @@
 var fs = require('fs');
 
-fs.writeFileSync("after.txt", "after");
+fs.writeFileSync("after.txt", "foo");
