@@ -30,6 +30,9 @@
     "before": "node ./codetender-before.js",
     "after": "node ./codetender-after.js"
   },
+  "delete": [
+    "codetender-*.js"
+  ],
   "banner": [
     "  _____        __    __              __          ____                __   ",
     " / ___/__  ___/ /__ / /____ ___  ___/ /__ ____  / __/__ ___ _  ___  / /__ ",

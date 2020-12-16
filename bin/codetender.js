@@ -55,6 +55,7 @@ function CodeTender() {
       runBeforeScript,
       renameAllFiles,
       runAfterScript,
+      cleanUpDelete,
       splash,
       logCloneSuccess,
       logTokenSuccess,
@@ -78,6 +79,7 @@ function CodeTender() {
       getTokens,
       prepTokens,
       renameAllFiles,
+      cleanUpDelete,
       splash,
       logTokenSuccess
     ]).then(deferred.resolve).catch(deferred.reject);
@@ -96,6 +98,7 @@ function CodeTender() {
         tokens: [],
         noReplace: [],
         ignore: [],
+        delete: [],
         notReplacedFiles: {},
         ignoredFiles: {}
       },
@@ -201,6 +204,11 @@ function CodeTender() {
         // Append ignore
         if (fileConfig.ignore) {
           me.config.ignore = me.config.ignore.concat(fileConfig.ignore);
+        }
+
+        // Append delete
+        if (fileConfig.delete) {
+          me.config.delete = me.config.delete.concat(fileConfig.delete);
         }
 
         // Append banner
@@ -468,26 +476,35 @@ function CodeTender() {
 
   // Clean up ignored files after git clone
   function cleanupIgnored() {
+    return cleanUpFiles(me.config.ignore, "ignore");
+  }
+
+  function cleanUpDelete() {
+    return cleanUpFiles(me.config.delete, "delete");
+  }
+
+  // Clean up files matching patterns provided
+  function cleanUpFiles(patterns, key) {
     var deferred = q.defer(),
       promises = [];
 
-    if (me.config.ignore.length < 1) {
-      verboseLog("No files or folders to ignore.");
+    if (!patterns || patterns.length < 1) {
+      verboseLog("No files or folders matching " + key + " config.");
       deferred.resolve();
     }
     else {
-      verboseLog("Removing ignored files from cloned repository...");
-      me.config.ignore.forEach(function (pattern) {
+      verboseLog("Removing files from cloned repository matching " + key + " config...");
+      patterns.forEach(function (pattern) {
         var d = q.defer();
 
         verboseLog("  Removing: " + pattern);
 
         rimraf(path.join(me.config.targetPath, pattern), function (err) {
           if (err) {
-            deferred.reject(err);
+            d.reject(err);
           }
           else {
-            deferred.resolve();
+            d.resolve();
           }
         });
         promises.push(d.promise);
