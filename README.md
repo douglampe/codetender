@@ -34,21 +34,33 @@ Codetender will replace all of the tokens as specified in file names, folder nam
     codetender replace path/to/folder
 
 You will be prompted for each token to replace and the replacement text. Codetender will replace all of the tokens as 
-specified in file names, folder names, and file content.
+specified in file names, folder names, and file content. You can specify a JSON configuration file using the `--file`
+or `-f` option.
 
-## Template Configuration
+## JSON Configuration
 
-Codetender supports JSON configuration using a `.codetender` file placed in the root folder of the template. Note that 
-this works the same whether that template is a local folder or git repository. This makes developing and testing 
-templates super easy since you can just use `codetender new source-folder destination-folder` to test your template 
-including the `.codetender` configuration. The format of the `.codetender` configuration is shown below:
+Codetender supports configuration via JSON file. When using `coedetender new`, if a `.codetender` file is found in the
+root folder of the template, the configuration is first read from this file. For either `codetender new` or
+`codetender replace`, the location of a configuration file can be specified with the `--file` or `-f` option. If a
+`.codetender` file is found and a file is specified with the `--file` option, the token and scripts configuration from
+the file override any settings found in the `.codetender` file and all other entries are appended.
+
+Note that for `codetender new` this works the same whether that template is a local folder or git repository. This 
+makes developing and testing templates super easy since you can just use 
+`codetender new source-folder destination-folder` to test your template including the `.codetender` configuration. 
+
+The format of the JSON configuration is shown below:
 
 ````
 {
   "tokens": [
     {
-      "pattern": "string",
-      "prompt": "string"
+      "pattern": "pattern to find",
+      "prompt": "prompt to display (optional)"
+    },
+    {
+      "pattern": "pattern to find",
+      "replacement": "value to replace pattern with"
     }
   ],
   "ignore": [
@@ -82,7 +94,13 @@ Codetender will find any **case-sensitive** matches for that string and replace 
 when prompted. The default prompt is `Replace all instances of '{pattern}' with:`. However, a more descriptive prompt 
 is recommended such as `Enter the first part of the application namespace (ex: MyCompany):`.
 
-In the example below, the user would first be prompted: `Enter the name of you project (ex: MyProject):`. Then they would be prompted: `Replace all instances of 'MyFunction' with:`.
+In addition, you can force replacements by specifying the val "replacement" key for a given pattern as shown. Tokens
+with a replacement value specified will not prompt the user and will always replace matches with the specified value.
+
+In the example below, the user would first be prompted: `Enter the name of you project (ex: MyProject):`. Then they 
+would be prompted: `Replace all instances of 'MyFunction' with:`. All instances of `text to always replace` will be
+replaced with `replacement value`.
+
 
 ```
   "tokens": [
@@ -92,16 +110,21 @@ In the example below, the user would first be prompted: `Enter the name of you p
     },
     {
       "pattern": "MyFunction",
+    },
+    {
+      "pattern": "text to always replace",
+      "replacement": "replacement value"
     }
   ]
 ````
 
 ### Ignored Files
 
-Codetender supports ignoring files via the `.codetender` configuration. This is particularly useful when using a local
+Codetender supports ignoring files via the JSON configuration. This is particularly useful when using a local
 folder as a template since you may want to ignore compiled output, external modules, etc. The `ignore` config expects
 an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be ignored and will not be 
-copied to the destination folder.
+copied to the destination folder. If `codetender new` is used with both a `.codetender` config and the `--file` option,
+the values in the `--file` file are appended after the values in the `.codetender` file.
 
 ````
   "ignore": [
@@ -112,8 +135,12 @@ copied to the destination folder.
 
 ### Files Skipped by Token Replacement
 
-Codetender supports skipping token replacement via the `.codetender` configuration. This is useful for template content
-such as scripts or README files which you may want to remain intact after token replacement.
+Codetender supports skipping token replacement via the JSON configuration. This is useful for template content
+such as scripts or README files which you may want to remain intact after token replacement. If `codetender new` is 
+used with both a `.codetender` config and the `--file` option, the values in the `--file` file are appended after the
+values in the `.codetender` file. If `codetender new` is used with both a `.codetender` config and the `--file` option,
+the values in the `--file` file are appended after the
+values in the `.codetender` file.
 
 ````
   "noReplace": [
@@ -126,7 +153,10 @@ such as scripts or README files which you may want to remain intact after token 
 
 Codetender supports execution of scripts before or after token replacement. The `before` script is executed after the 
 files are cloned but before token replacement is performed. The `after` script is executed after token replacement is
-performed.
+performed. Note that scripts are executed relative to the target path so any content should not be excluded using
+`ignore`. If there is content used in the `after` script which should not have tokens replaced, make sure to use the
+`noReplace` setting to skip replacing tokens in the content used by the after script. Otherwise, the content will be
+modified during token processing.
 
 ````
   "scripts": {
@@ -152,3 +182,4 @@ the "Small Slant" font.
     "/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/"
     "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
   ]
+````

@@ -47,7 +47,8 @@ function CodeTender() {
 
     runTasks([
       copyOrClone,
-      readConfig,
+      readTemplateConfig,
+      readFileConfig,
       cleanupIgnored,
       getTokens,
       prepTokens,
@@ -73,6 +74,7 @@ function CodeTender() {
     initConfig(config);
 
     runTasks([
+      readFileConfig,
       getTokens,
       prepTokens,
       renameAllFiles,
@@ -126,33 +128,87 @@ function CodeTender() {
   /**
    * Read configuration from the .codetender file from the root folder of the template.
    */
-  function readConfig() {
+  function readTemplateConfig() {
+    return readConfig(path.join(me.config.targetPath, ".codetender"));
+  }
+
+  /**
+   * Read configuration from the file specified in the config.
+   */
+  function readFileConfig() {
+    return readConfig(me.config.file, true);
+  }
+
+  /**
+   * Read configuration from the file specified.
+   */
+  function readConfig(file, checkFile) {
     var deferred = q.defer(),
       fileConfig;
 
-    fs.readFile(path.join(me.config.targetPath, ".codetender"), { encoding: "utf-8" }, function (err, data) {
+    fs.readFile(file, { encoding: "utf-8" }, function (err, data) {
       if (err) {
-        // If we get an error, assume it is because the config doesn't exist and continue:
-        deferred.resolve();
+        if (checkFile) {
+          log("File not found: " + file);
+          deferred.reject();
+        }
+        else {
+          // If we get an error, assume it is because the config doesn't exist and continue:
+          deferred.resolve();
+        }
       }
       else {
-        verboseLog("Reading config from .codetener file...");
-        verboseLog("  Contents of .codetender file: " + data)
+        verboseLog("Reading config from file " + file + "...");
+        verboseLog("  Contents of " + file + ": " + data)
 
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens,
           me.config = Object.assign({}, fileConfig, me.config);
-        if (me.config.tokens.length === 0 && fileConfig.tokens) {
-          me.config.tokens = fileConfig.tokens;
+
+        // Merge tokens
+        if (fileConfig.tokens) {
+          fileConfig.tokens.forEach(function (fileToken) {
+            let token = me.config.tokens.find(t => t.pattern === fileToken.pattern);
+            if (token) {
+              if (fileToken.prompt) {
+                token.prompt = fileToken.prompt;
+              }
+              if (fileToken.replacement) {
+                token.replacement = fileToken.replacement;
+              }
+            }
+            else {
+              me.config.tokens.push(fileToken);
+            }
+          });
         }
+
+        // Merge scripts
+        if (fileConfig.scripts) {
+          if (fileConfig.scripts.before) {
+            me.config.scripts.before = fileConfig.scripts.before;
+          }
+          if (fileConfig.scripts.after) {
+            me.config.scripts.after = fileConfig.scripts.after;
+          }
+        }
+
+        // Append noReplace
         if (fileConfig.noReplace) {
           me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace);
         }
+
+        // Append ignore
         if (fileConfig.ignore) {
           me.config.ignore = me.config.ignore.concat(fileConfig.ignore);
         }
 
-        verboseLog("Config after reading .codetender file: " + JSON.stringify(me.config, null, 2));
+        // Append banner
+        if (fileConfig.banner) {
+          me.config.banner = me.config.banner.concat(fileConfig.banner);
+        }
+
+        verboseLog("Config after reading file " + file + ": " + JSON.stringify(me.config, null, 2));
 
         deferred.resolve();
       }
@@ -217,7 +273,7 @@ function CodeTender() {
       else {
         deferred.resolve();
       }
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -255,7 +311,7 @@ function CodeTender() {
         token.replacement = response;
         deferred.resolve();
       }
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -274,7 +330,7 @@ function CodeTender() {
     rl.question(prompt, function (response) {
       deferred.resolve(response);
       rl.close();
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -618,6 +674,7 @@ function CodeTender() {
         deferred.resolve();
       }
       else {
+        verboseLog("Renmaing file " + oldFile + " to " + newFile);
         fs.rename(oldFile, newFile, function (err) {
           if (err) {
             deferred.reject(err);
@@ -743,7 +800,7 @@ function CodeTender() {
       log("");
 
       if (Array.isArray(me.config.banner)) {
-        me.config.banner.forEach(function(line) {
+        me.config.banner.forEach(function (line) {
           log(line);
         });
       }
@@ -751,7 +808,7 @@ function CodeTender() {
         log(me.config.banner);
       }
     }
-  
+
     return Promise.resolve();
   }
 

@@ -1,14 +1,16 @@
 {
   "tokens": [
     {
-      "pattern": "foo"
-    },
-    {
       "pattern": "CodeTender",
-      "prompt": "Custom prompt to replace CodeTender:"
+      "prompt": "This should be overridden by -f"
     },
     {
-      "pattern": "sub"
+      "pattern": "foo",
+      "replacement": "This should be overridden by -f"
+    },
+    {
+      "pattern": "sub",
+      "replacement": "folder"
     }
   ],
   "ignore": [
@@ -18,7 +20,8 @@
   ],
   "noReplace": [
     "**/README.md",
-    "noReplace-folder/"
+    "noReplace-folder/",
+    "codetender-*.js"
   ],
   "scripts": {
     "before": "node ./codetender-before.js",
