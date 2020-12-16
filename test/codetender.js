@@ -49,6 +49,9 @@ function cleanupNew(err) {
 
 function cleanupReplace(err) {
   rimraf(path.join(__dirname, 'output/test-replace'), function() {
+    if (err) {
+      t.threw(err);
+    }
   });
 }
 
@@ -60,18 +63,19 @@ function testNew(t) {
     file: 'sample/codetender.json',
   }).then(function() {
     t.teardown(cleanupNew)
-    t.plan(11);
+    t.plan(12);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
     t.ok(checkContents('output/test-new/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), "foo, CodeTender, and sub all replaced");
     t.ok(checkFile('output/test-new/before.txt'), "before script runs");
     t.notOk(checkFile('output/test-new/ignored-folder/foo.txt'), "ignored folders are ignored");
     t.notOk(checkFile('output/test-new/ignore-file.txt'), "ignored files are ignored");
-    t.ok(checkContents('output/test-new/folder/README.md', '# The word "foo" in this file should not be changed'), "noReplace files are skipped");
+    t.ok(checkContents('output/test-new/no-replace-file.txt', 'foo'), "noReplace files are skipped");
     t.ok(checkDir('output/test-new/noReplace-folder/sub', 'foo'), "noReplace folders are skipped");
     t.ok(checkContents('output/test-new/noReplace-folder/sub/foo.txt', 'foo'), "noReplace folder contents are skipped");
     t.ok(checkContents('/output/test-new/before.txt', 'bar'), "before script works");
     t.ok(checkContents('/output/test-new/after.txt', 'foo'), "after script works");
+    t.ok(checkContents('/output/test-new/README.md', '# This is a sample Served template.'), "README is processed");
   }).catch(t.threw);
 }
 
@@ -113,8 +117,9 @@ function testReplace(t) {
               {
                 codetender.replace(config).then(function() {
                   t.teardown(cleanupReplace);
-                  t.plan(4);
-                  t.ok(checkContents('/output/test-replace/folder/README.md', '# The word "bar" in this file should not be changed'));
+                  t.plan(5);
+                  t.ok(checkContents('/output/test-replace/README.md', '# This is a sample Served template.'), "README is processed");
+                  t.ok(checkContents('output/test-replace/no-replace-file.txt', 'foo'), "noReplace files are skipped");
                   t.ok(checkFile('/output/test-replace/bar.js'), "foo replaced with bar");
                   t.ok(checkDir('/output/test-replace/folder'), "sub replaced with folder");
                   t.ok(checkContents('/output/test-replace/.git/foo.txt', 'foo'), ".git is ignored");
