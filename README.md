@@ -170,7 +170,7 @@ modified during token processing.
 
 ### Delete
 
-Codetender supports deleting files after processing via the JSON configuration. This is particularly useful for script
+Codetender supports deleting files after processing via the JSON configuration. This is particularly useful for scripts
 which are intended to be executed before or after processing, but are not intended to remain as content. The `delete` 
 config expects an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be removed 
 from the destination folder after processing. If `codetender new` is used with both a `.codetender` config and the 
