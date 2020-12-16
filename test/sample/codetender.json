@@ -17,8 +17,7 @@
     "README.md"
   ],
   "noReplace": [
-    "no-replace-file.txt",
-    "test-output.txt"
+    "no-replace-file.txt"
   ],
   "delete": [
     "delete-folder/",
