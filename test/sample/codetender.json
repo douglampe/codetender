@@ -18,5 +18,9 @@
   ],
   "noReplace": [
     "no-replace-file.txt"
+  ],
+  "delete": [
+    "delete-folder/",
+    "delete-file.txt"
   ]
 }

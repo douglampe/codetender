@@ -71,9 +71,12 @@ The format of the JSON configuration is shown below:
       "do_not_replace_tokens_in_this_file.txt"
   ],
   "scripts": {
-    "before": "string",
-    "after": "string"
+    "before": "codetender-before.js",
+    "after": "codetender-after.js"
   },
+  "delete" [
+    "codetender-*.js"
+  ],
   "banner": [
     "This is a banner.",
     "You can use it to display instructions, etc. after your template is processed.",
@@ -122,9 +125,9 @@ replaced with `replacement value`.
 
 Codetender supports ignoring files via the JSON configuration. This is particularly useful when using a local
 folder as a template since you may want to ignore compiled output, external modules, etc. The `ignore` config expects
-an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be ignored and will not be 
-copied to the destination folder. If `codetender new` is used with both a `.codetender` config and the `--file` option,
-the values in the `--file` file are appended after the values in the `.codetender` file.
+an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be removed from the 
+destination folder prior to processing. If `codetender new` is used with both a `.codetender` config and the `--file`
+option, the values in the `--file` file are appended after the values in the `.codetender` file.
 
 ````
   "ignore": [
@@ -163,6 +166,22 @@ modified during token processing.
     "before": "node ./codetender-before.js",
     "after": "node ./codetender-after.js"
   }
+````
+
+### Delete
+
+Codetender supports deleting files after processing via the JSON configuration. This is particularly useful for script
+which are intended to be executed before or after processing, but are not intended to remain as content. The `delete` 
+config expects an array of globs (similar to the `.gitignore` syntax). Any files matching the globs will be removed 
+from the destination folder after processing. If `codetender new` is used with both a `.codetender` config and the 
+`--file` option, the values in the `--file` file are appended after the values in the `.codetender` file.
+
+
+````
+  "delete": [
+      "delete_this_folder/",
+      "delete_this_file.txt"
+  ]
 ````
 
 ### Banners
@@ -208,6 +227,36 @@ specified by the user in response to the prompt `Enter project name (ex: MyProje
   ],
   "ignore": [
     "README.md"
+  ]
+}
+````
+
+### Executing an after script which is not processed and then is removed after processing
+
+In the example below, the `after` script and related content contain tokens which could conflict with replacements in 
+content and therefore should not be processed so the files are specified as `noReplace`. Note that this is not 
+necessary for the `before` script since it is executed prior to processing. Both the `before` and `after` scripts and
+related content are deleted after processing.
+
+````
+{
+  "tokens": [
+    {
+      "pattern": "ProjectName",
+      "prompt": "Enter project name (ex: MyProject):"
+    }
+  ],
+  "noReplace": [
+    "codetender-after.js",
+    "content-used-by-after-script.txt"
+  ],
+  "scripts" {
+    "before": "node ./codetender-before.js",
+    "after": "node ./codetender-after.js"
+  }
+  "delete": [
+    "codetender-*.js",
+    "content-used-by-after-script.txt"
   ]
 }
 ````
