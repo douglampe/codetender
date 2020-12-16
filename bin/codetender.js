@@ -338,7 +338,7 @@ function CodeTender() {
     rl.question(prompt, function (response) {
       deferred.resolve(response);
       rl.close();
-    }).catch(deferred.reject);
+    });
 
     return deferred.promise;
   }
