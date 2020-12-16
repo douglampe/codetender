@@ -1,1 +1,1 @@
-# This is a sample CodeTender template.
+# This foo will be replaced by README.codetender.md.

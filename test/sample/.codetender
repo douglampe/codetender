@@ -11,6 +11,10 @@
     {
       "pattern": "sub",
       "replacement": "folder"
+    },
+    {
+      "pattern": "README.codetender.md",
+      "replacement": "README.md"
     }
   ],
   "ignore": [
@@ -19,7 +23,6 @@
     "**/ignore-file.txt"
   ],
   "noReplace": [
-    "**/README.md",
     "noReplace-folder/",
     "codetender-*.js"
   ],

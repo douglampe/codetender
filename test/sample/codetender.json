@@ -7,6 +7,16 @@
     {
       "pattern": "foo",
       "replacement": "bar"
+    },
+    {
+      "pattern": "README.codetender.md",
+      "replacement": "README.md"
     }
+  ],
+  "ignore": [
+    "README.md"
+  ],
+  "noReplace": [
+    "no-replace-file.txt"
   ]
 }
