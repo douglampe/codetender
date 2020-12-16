@@ -9,7 +9,6 @@ var fs = require('graceful-fs'),
   glob = require('glob'),
   rimraf = require('rimraf'),
   exec = require('child_process').exec,
-
   replaceInFile = require('replace-in-file');
 
 module.exports = {
@@ -100,7 +99,9 @@ function CodeTender() {
         ignore: [],
         delete: [],
         notReplacedFiles: {},
-        ignoredFiles: {}
+        ignoredFiles: {},
+        scripts: {},
+        banner: []
       },
       config
     );
@@ -165,8 +166,7 @@ function CodeTender() {
         verboseLog("  Contents of " + file + ": " + data)
 
         fileConfig = JSON.parse(data);
-        tokens = me.config.tokens,
-          me.config = Object.assign({}, fileConfig, me.config);
+        tokens = me.config.tokens;
 
         // Merge tokens
         if (fileConfig.tokens) {
@@ -691,7 +691,7 @@ function CodeTender() {
         deferred.resolve();
       }
       else {
-        verboseLog("Renmaing file " + oldFile + " to " + newFile);
+        verboseLog("Renaming file " + oldFile + " to " + newFile);
         fs.rename(oldFile, newFile, function (err) {
           if (err) {
             deferred.reject(err);

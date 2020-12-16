@@ -4,7 +4,9 @@ var t = require('tap'),
   fsExtra = require('node-fs-extra'),
   mkdirp = require('mkdirp'),
   path = require('path'),
-  codetender = require('../bin/codetender.js');
+  codetender = require('../bin/codetender.js'),
+  newLog = [],
+  replaceLog = [];
 
 // Make sure working directory is this folder:
 process.chdir(__dirname); 
@@ -56,14 +58,20 @@ function cleanupReplace(err) {
 }
 
 function testNew(t) {
-  codetender.new({
+  const config = {
     verbose: true,
     template: 'sample', 
     folder: './output/test-new',
-    file: 'sample/codetender.json',
-  }).then(function() {
+    file: 'sample/codetender.json'
+  };
+  config.logger = function(line) {
+    newLog.push(line);
+    console.log(line);
+  };
+
+  codetender.new(config).then(function() {
     t.teardown(cleanupNew)
-    t.plan(16);
+    t.plan(17);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
     t.ok(checkContents('output/test-new/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), "foo, CodeTender, and sub all replaced");
@@ -80,6 +88,8 @@ function testNew(t) {
     t.notOk(checkDir('output/test-new/delete-folder'), "delete folders are removed");
     t.notOk(checkFile('output/test-new/codetender-before.js'), "codetender-before is removed");
     t.notOk(checkFile('output/test-new/codetender-after.js'), "codetender-after is removed");
+    t.equal(newLog.filter(l => l == "This is a test. If this were a real template, there would be some useful info here.").length, 1, "Banner appears only once");
+    t.match
   }).catch(t.threw);
 }
 
@@ -103,6 +113,10 @@ function testReplace(t) {
             replacement: 'folder'
           }
         ]
+      };
+      config.logger = function(line) {
+        replaceLog.push(line);
+        console.log(line);
       };
 
   mkdirp(config.folder).then(function () {
