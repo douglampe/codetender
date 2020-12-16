@@ -35,6 +35,11 @@ async function main() {
  */
 function handleNew(template, folder, options) {
 
+  // Get options from root command for CLI
+  while (options && options.parent) {
+    options = options.parent;
+  }
+
   if (options && options.verbose) {
 
     console.log('Verbose mode enabled.');
@@ -61,6 +66,11 @@ function handleNew(template, folder, options) {
  * @param {Object} options Options
  */
 function handleReplace(folder, options) {
+
+  // Get options from root command for CLI
+  while (options && options.parent) {
+    options = options.parent;
+  }
 
   if (options && options.verbose && !options.quiet) {
     console.log('Verbose mode enabled.');
