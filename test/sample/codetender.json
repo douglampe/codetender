@@ -1,8 +1,8 @@
 {
-  "replace": {
-    "CodeTender": "Served",
-    "foo": "bar",
-    "quick": "slow",
-    "sub": "folder"
-  }
+  "tokens": [
+    {
+      "pattern": "CodeTender",
+      "replacement": "Served"
+    }
+  ]
 }

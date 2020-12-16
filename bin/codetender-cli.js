@@ -11,7 +11,8 @@ async function main() {
   program
     .version(pkgInfo.version)
     .option('-v, --verbose', 'Display verbose output')
-    .option('-q, --quiet', 'Do not output to console (overrides --verbose)');
+    .option('-q, --quiet', 'Do not output to console (overrides --verbose)')
+    .option('-f --file <file>', 'Replace tokens as specified in a file');
 
   program
     .command('new <template> <folder>')
@@ -47,7 +48,8 @@ function handleNew(template, folder, options) {
     template: template,
     folder: folder,
     verbose: options ? options.verbose : false,
-    quiet: options ? options.quiet : false
+    quiet: options ? options.quiet : false,
+    file: options ? options.file : null
   };
 
   codetender.new(config).then(process.exit);
@@ -70,7 +72,8 @@ function handleReplace(folder, options) {
   const config = {
     folder: folder,
     verbose: options ? options.verbose : false,
-    quiet: options ? options.quiet : false
+    quiet: options ? options.quiet : false,
+    file: options ? options.file : null
   };
 
   codetender.replace(config);

@@ -1,14 +1,12 @@
 {
   "tokens": [
     {
-      "pattern": "foo"
+      "pattern": "foo",
+      "replacement": "bar"
     },
     {
-      "pattern": "CodeTender",
-      "prompt": "Custom prompt to replace CodeTender:"
-    },
-    {
-      "pattern": "sub"
+      "pattern": "sub",
+      "replacement": "folder"
     }
   ],
   "ignore": [

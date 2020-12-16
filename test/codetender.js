@@ -57,20 +57,7 @@ function testNew(t) {
     verbose: true,
     template: 'sample', 
     folder: './output/test-new',
-    tokens: [
-      {
-        pattern: 'CodeTender',
-        replacement: 'Served'
-      },
-      {
-        pattern: 'foo',
-        replacement: 'bar'
-      },
-      {
-        pattern: 'sub',
-        replacement: 'folder'
-      }
-    ]
+    file: 'sample/codetender.json',
   }).then(function() {
     t.teardown(cleanupNew)
     t.plan(9);
@@ -91,11 +78,8 @@ function testReplace(t) {
       config = {
         verbose: true,
         folder: './output/test-replace',
+        file: 'sample/codetender.json',
         tokens: [
-          {
-            pattern: 'CodeTender',
-            replacement: 'Served'
-          },
           {
             pattern: 'foo',
             replacement: 'bar'
