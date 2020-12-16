@@ -42,8 +42,8 @@ or `-f` option.
 Codetender supports configuration via JSON file. When using `coedetender new`, if a `.codetender` file is found in the
 root folder of the template, the configuration is first read from this file. For either `codetender new` or
 `codetender replace`, the location of a configuration file can be specified with the `--file` or `-f` option. If a
-`.codtender` file is found and a file is specified with the `--file` option, the token configuration from the file 
-overrides any settings found in the `.codetender` file and all other entries are appended.
+`.codetender` file is found and a file is specified with the `--file` option, the token and scripts configuration from
+the file override any settings found in the `.codetender` file and all other entries are appended.
 
 Note that for `codetender new` this works the same whether that template is a local folder or git repository. This 
 makes developing and testing templates super easy since you can just use 
@@ -156,7 +156,7 @@ files are cloned but before token replacement is performed. The `after` script i
 performed. Note that scripts are executed relative to the target path so any content should not be excluded using
 `ignore`. If there is content used in the `after` script which should not have tokens replaced, make sure to use the
 `noReplace` setting to skip replacing tokens in the content used by the after script. Otherwise, the content will be
-modified ruing token processing.
+modified during token processing.
 
 ````
   "scripts": {
