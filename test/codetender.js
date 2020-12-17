@@ -4,9 +4,7 @@ var t = require('tap'),
   fsExtra = require('fs-extra'),
   mkdirp = require('mkdirp'),
   path = require('path'),
-  codetender = require('../bin/codetender.js'),
-  newLog = [],
-  replaceLog = [];
+  Codetender = require('../bin/codetender.js');
 
 // Make sure working directory is this folder:
 process.chdir(__dirname); 
@@ -64,13 +62,10 @@ function testNew(t) {
     folder: './output/test-new',
     file: 'sample/codetender.json'
   };
-  config.logger = function(line) {
-    newLog.push(line);
-    console.log(line);
-  };
 
-  codetender.new(config).then(function() {
-    t.teardown(cleanupNew)
+  var ctNew = new Codetender();
+  ctNew.new(config).then(function() {
+    t.teardown(cleanupNew);
     t.plan(17);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
@@ -88,7 +83,7 @@ function testNew(t) {
     t.notOk(checkDir('output/test-new/delete-folder'), "delete folders are removed");
     t.notOk(checkFile('output/test-new/codetender-before.js'), "codetender-before is removed");
     t.notOk(checkFile('output/test-new/codetender-after.js'), "codetender-after is removed");
-    t.equal(newLog.filter(l => l == "This is a test. If this were a real template, there would be some useful info here.").length, 1, "Banner appears only once");
+    t.equal(ctNew.logOutput.filter(l => l == "This is a test. If this were a real template, there would be some useful info here.").length, 1, "Banner appears only once");
     t.match
   }).catch(t.threw);
 }
@@ -114,10 +109,6 @@ function testReplace(t) {
           }
         ]
       };
-      config.logger = function(line) {
-        replaceLog.push(line);
-        console.log(line);
-      };
 
   mkdirp(config.folder).then(function () {
     // Copy from source to destination:
@@ -133,7 +124,9 @@ function testReplace(t) {
               }
               else
               {
-                codetender.replace(config).then(function() {
+                let ctReplace = new Codetender();
+
+                ctReplace.replace(config).then(function() {
                   t.teardown(cleanupReplace);
                   t.plan(7);
                   t.ok(checkContents('output/test-replace/README.md', '# This is a sample Served template.'), "README is processed");
@@ -152,6 +145,23 @@ function testReplace(t) {
   }).catch(t.threw);
 }
 
+function testInvalidGit(t) {
+  const config = {
+    template: 'http://invalidgitrepo.com/invalid.git', 
+    folder: './output/test-new',
+    verbose: true
+  };
+
+  const ctInvalidGit = new Codetender();
+
+  t.plan(2);
+  t.rejects(ctInvalidGit.new(config), "Invalid git repo throws error").then(function () {
+    t.equal(ctInvalidGit.logOutput.filter(l => l == "Cloning into \'folder\'...\nfatal: unable to access \'http://invalidgitrepo.com/invalid.git/\': Could not resolve host: invalidgitrepo.com\n").length, 1, "Invalid git repo logs appropriate message");
+  });
+}
+
 t.test('CodeTender new', testNew);
 
 t.test('CodeTender replace', testReplace);
+
+t.test('CodeTender new with invalid repo', testInvalidGit);
