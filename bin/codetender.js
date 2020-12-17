@@ -5,28 +5,19 @@ var fs = require('graceful-fs'),
   readline = require('readline'),
   q = require('q'),
   mkdirp = require('mkdirp'),
-  clone = require('git-clone'),
   glob = require('glob'),
   rimraf = require('rimraf'),
   exec = require('child_process').exec,
   replaceInFile = require('replace-in-file');
 
-module.exports = {
-  new: function (config) {
-    var codetender = new CodeTender();
-    return codetender.new(config);
-  },
-  replace: function (config) {
-    var codetender = new CodeTender();
-    return codetender.replace(config);
-  }
-};
+module.exports = CodeTender;
 
 function CodeTender() {
   var me = this;
 
   me.new = newFromTemplate;
   me.replace = replace;
+  me.logOutput = [];
 
   /**
    * Copies a template defined by config.template to a folder defined by config.folder
@@ -59,7 +50,10 @@ function CodeTender() {
       logCloneSuccess,
       logTokenSuccess,
       banner
-    ]).then(deferred.resolve).catch(deferred.reject);
+    ]).then(deferred.resolve).catch(function (err) {
+      oops(err, true);
+      deferred.reject();
+    });
 
     return deferred.promise;
   }
@@ -81,7 +75,10 @@ function CodeTender() {
       cleanUpDelete,
       splash,
       logTokenSuccess
-    ]).then(deferred.resolve).catch(deferred.reject);
+    ]).then(deferred.resolve).catch(function (err) {
+      oops(err, true);
+      deferred.reject();
+    });
 
     return deferred.promise;
   }
@@ -140,7 +137,12 @@ function CodeTender() {
    * Read configuration from the file specified in the config.
    */
   function readFileConfig() {
-    return readConfig(me.config.file, true);
+    if (me.config.file) {
+      return readConfig(me.config.file, true);
+    }
+    else {
+      return q.resolve();
+    }
   }
 
   /**
@@ -408,8 +410,7 @@ function CodeTender() {
    * Parse folder argument and call clone or copy
    */
   function copyOrClone() {
-    var deferred = q.defer(),
-      template = me.config.template,
+    var template = me.config.template,
       folder = me.config.targetPath;
 
     if (fs.existsSync(template)) {
@@ -417,7 +418,7 @@ function CodeTender() {
       log('  Cloning from template ' + template + ' into folder ' + folder);
 
       me.config.isLocalTemplate = true;
-      copyFromFs(template, folder).then(deferred.resolve).catch(deferred.reject);
+      return copyFromFs(template, folder);
     }
     else {
       if (!template.match(/http.+/g)) {
@@ -428,11 +429,8 @@ function CodeTender() {
         template = template + '.git';
         verboseLog('Added git extension to template: ' + template);
       }
-      gitClone(template, folder).then(function () {
-        deferred.resolve();
-      });
+      return gitClone(template, folder);
     }
-    return deferred.promise;
   }
 
   // Copy template from local file system
@@ -467,9 +465,9 @@ function CodeTender() {
 
     log("Cloning from repo: " + repo);
     log("  to: " + folder);
-    clone(repo, folder, function () {
+    runChildProcess("git clone " + repo + " folder ", ".").then(function () {
       deferred.resolve();
-    });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
@@ -721,15 +719,14 @@ function CodeTender() {
   }
 
   // Run a child process
-  function runChildProcess(command) {
+  function runChildProcess(command, cwd) {
     var deferred = q.defer();
 
     verboseLog("  Running command: " + command);
 
-    exec(command, { cwd: me.config.targetPath }, function (err) {
+    exec(command, { cwd: cwd || me.config.targetPath }, function (err, stdout, stderr) {
       if (err) {
-        oops(err);
-        deferred.reject(err);
+        deferred.reject(stderr);
       }
       else {
         deferred.resolve();
@@ -760,24 +757,9 @@ function CodeTender() {
 
   // Run a series of promises in sync
   function runTasks(tasks) {
-    var result = Promise.resolve(),
-      failed,
-      err;
+    var result = Promise.resolve();
 
-    tasks.forEach(function (task) {
-      result = result.then(task).catch(function (err) {
-        oops(err);
-        err = err;
-        failed = true;
-      });
-    });
-
-    if (failed) {
-      return Promise.reject(err);
-    }
-    else {
-      return result;
-    }
+    return tasks.reduce(q.when, q(result));
   }
 
   // Log provided output only if verbose is enabled
@@ -790,6 +772,7 @@ function CodeTender() {
   // Log provided output unless quiet mode is enabled
   function log(output) {
     if (!me.config.quiet) {
+      me.logOutput.push(output);
       me.config.logger(output);
     }
   }
@@ -833,7 +816,7 @@ function CodeTender() {
    * Display error message
    * @param {string} err Error message
    */
-  function oops(err) {
+  function oops(err, captured) {
     log('                          __');
     log('  ____  ____  ____  _____/ /');
     log(' / __ \\/ __ \\/ __ \\/ ___/ /');
@@ -841,6 +824,9 @@ function CodeTender() {
     log('\\____/\\____/ .___/____(_)');
     log('          /_/ ');
     log(err);
-    process.exit();
+
+    if (!captured) {
+      process.exit();
+    }
   }
 }
