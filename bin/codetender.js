@@ -68,9 +68,9 @@ function CodeTender() {
    */
   function replace(config) {
     var deferred = q.defer();
-    
+
     initConfig(config);
-    
+
     if (!fs.existsSync(me.config.targetPath)) {
       log('Folder ' + me.config.folder + ' does not exist. Please specify a valid folder or use "codetender new" to copy and process a template.');
       deferred.reject();
@@ -110,7 +110,8 @@ function CodeTender() {
         notReplacedFiles: {},
         ignoredFiles: {},
         scripts: {},
-        banner: []
+        banner: [],
+        errors: []
       },
       config
     );
@@ -180,12 +181,7 @@ function CodeTender() {
           fileConfig.tokens.forEach(function (fileToken) {
             let token = me.config.tokens.find(t => t.pattern === fileToken.pattern);
             if (token) {
-              if (fileToken.prompt) {
-                token.prompt = fileToken.prompt;
-              }
-              if (fileToken.replacement) {
-                token.replacement = fileToken.replacement;
-              }
+              Object.assign(token, fileToken);
             }
             else {
               me.config.tokens.push(fileToken);
@@ -370,6 +366,7 @@ function CodeTender() {
         pattern: convertToken(token.pattern),
         originalPattern: token.pattern,
         replacement: token.replacement,
+        overwrite: token.overwrite,
         renamed: [],
         files: [],
         count: 0
@@ -616,7 +613,7 @@ function CodeTender() {
 
             let tasks = [];
 
-            Object.keys(me.tokenMap).forEach((key) => {
+            Object.keys(me.tokenMap).forEach(key => {
               tasks.push(() => {
                 let d = q.defer();
                 let token = me.tokenMap[key];
@@ -625,7 +622,7 @@ function CodeTender() {
                   from: token.pattern,
                   to: token.replacement,
                   countMatches: true
-                }).then((results) => {
+                }).then(results => {
                   results.forEach(result => {
                     if (result.hasChanged) {
                       token.count += result.numReplacements;
@@ -683,7 +680,7 @@ function CodeTender() {
       newFile,
       tokens = [];
 
-    Object.keys(me.tokenMap).forEach((key) => {
+    Object.keys(me.tokenMap).forEach(key => {
       let token = me.tokenMap[key];
       if (item.match(token.pattern)) {
         item = item.replace(token.pattern, token.replacement);
@@ -699,23 +696,57 @@ function CodeTender() {
         deferred.resolve();
       }
       else {
-        verboseLog("Renaming file " + oldFile + " to " + newFile);
-
-        tokens.forEach((t) => {
+        tokens.forEach(t => {
           t.renamed.push({
             old: oldItem,
             new: item
           });
         });
 
-        fs.rename(oldFile, newFile, function (err) {
-          if (err) {
-            deferred.reject(err);
-          }
-          else {
+        // Handle conflicts
+        if (fs.existsSync(newFile)) {
+
+          verboseLog("Rename Conflict: " + oldItem + " -> " + item + " in folder " + folder);
+
+          // If token is flagged as overwrite, delete and rename. Otherwise skip.
+          if (tokens.find(t => t.overwrite)) {
+            verboseLog("  Deleting " + oldItem + " and replacing with " + item);
+            fs.unlink(newFile, err => {
+              if (err) {
+                deferred.reject(err);
+              } else {
+                fs.rename(oldFile, newFile, function (err) {
+                  if (err) {
+                    deferred.reject(err);
+                  }
+                  else {
+                    deferred.resolve();
+                  }
+                });
+              }
+            })
+          } else {
+            verboseLog("  Skipping rename of " + oldItem + " to " + item + " in folder " + folder);
+            me.config.errors.push({
+              type: "Rename Conflict",
+              folder: folder,
+              old: oldItem,
+              new: item
+            });
             deferred.resolve();
           }
-        });
+        }
+        else {
+          verboseLog("Renaming file " + oldFile + " to " + newFile);
+          fs.rename(oldFile, newFile, function (err) {
+            if (err) {
+              deferred.reject(err);
+            }
+            else {
+              deferred.resolve();
+            }
+          });
+        }
       }
     } else {
       deferred.resolve();
@@ -775,7 +806,7 @@ function CodeTender() {
       log('pattern -> replacement (content/files)');
       log('--------------------------------------');
 
-      Object.keys(me.tokenMap).forEach((key) => {
+      Object.keys(me.tokenMap).forEach(key => {
         let token = me.tokenMap[key];
         log(token.originalPattern + ' -> ' + token.replacement + ' (' + token.count + '/' + token.renamed.length + ')');
 
@@ -788,6 +819,15 @@ function CodeTender() {
           });
         }
       });
+
+      let conflictErrors = me.config.errors.filter(e => e.type === "Rename Conflict" );
+      if (conflictErrors.length > 0) {
+        log('Could not rename the following files or folders due to naming conflicts:');
+
+        conflictErrors.forEach(e => {
+          log('  Conflict: ' + e.old + ' -> ' + e.new + ' in folder ' + e.folder);
+        });
+      }
     }
     else {
       log('No tokens specified.');

@@ -1,15 +1,31 @@
 # CodeTender
 Ever try to create your own template for a scaffolding engine (&lt;cough&gt; Yeoman &lt;/cough&gt;) and been frustrated
- with the seemingly endless cycle of edit template/deploy template/test template? Well frustrate no more! Now, thanks 
- to CodeTender, literally any collection of files can be a template. Get your project working **first**, then turn it 
- into a template. CodeTender serves up new projects as easy as a bartender serves up drinks. Any git repository or 
- local folder can be a template. Just replace any text token in all file names and contents and voila! New project!
+with the seemingly endless cycle of edit template/deploy template/test template? Well frustrate no more! Now, thanks 
+to CodeTender, literally any collection of files can be a template. Get your project working **first**, then turn it 
+into a template. CodeTender serves up new projects as easy as a bartender serves up drinks. Any git repository or 
+local folder can be a template. Just replace any text token in all file names and contents and voila! New project!
 
 ## Installation
 
     npm install -g codetender
 
 ## Usage
+
+```
+Usage: codetender [options] [command]
+
+Options:
+  -V, --version            output the version number
+  -v, --verbose            Display verbose output
+  -q, --quiet              Do not output to console (overrides --verbose)
+  -f --file <file>         Replace tokens as specified in a file
+  -h, --help               display help for command
+
+Commands:
+  new <template> <folder>  Copies contents of template to new folder then prompts for token replacement
+  replace <folder>         Prompts for token replacement and replaces tokens
+  help [command]           display help for command
+```
 
 ### Create New Project From Template
 
@@ -23,15 +39,15 @@ OR
 
     codetender new ../relative/path/to/folder new_folder_name
 
-If the template includes a `.codetender` configuration file, you will be prompted to enter specific text which will 
-replace placeholders in the template. If no configuration file exists, you will be prompted for each token to replace 
-and the replacement text. CodeTender will then create a folder and copy the files into the folder. If the files come 
-from a git repository, the `.git` folder will be deleted to disconnect it from the original remote branch. Finally, 
-CodeTender will replace all of the tokens as specified in file names, folder names, and file content.
+If the template includes a `.codetender` configuration file in the root folder, you will be prompted to enter specific 
+text which will replace placeholders in the template. If no configuration file exists, you will be prompted for each 
+token to replace and the replacement text. CodeTender will then create a folder and copy the files into the folder. If
+the files come from a git repository, the `.git` folder will be deleted to disconnect it from the original remote 
+branch. Finally, CodeTender will replace all of the tokens as specified in file names, folder names, and file content.
 
-## Rename Tokens in Existing Folder
+### Rename Tokens in Existing Folder
 
-    codetender replace path/to/folder
+    codetender replace path/to/folder -f codetender-config.json
 
 You will be prompted for each token to replace and the replacement text. CodeTender will replace all of the tokens as 
 specified in file names, folder names, and file content. You can specify a JSON configuration file using the `--file`
@@ -43,7 +59,7 @@ CodeTender supports configuration via JSON file. When using `coedetender new`, i
 root folder of the template, the configuration is first read from this file. For either `codetender new` or
 `codetender replace`, the location of a configuration file can be specified with the `--file` or `-f` option. If a
 `.codetender` file is found and a file is specified with the `--file` option, the token and scripts configuration from
-the file override any settings found in the `.codetender` file and all other entries are appended.
+the file override any matching settings found in the `.codetender` file and all other entries are appended.
 
 Note that for `codetender new` this works the same whether that template is a local folder or git repository. This 
 makes developing and testing templates super easy since you can just use 
@@ -51,7 +67,7 @@ makes developing and testing templates super easy since you can just use
 
 The format of the JSON configuration is shown below:
 
-````
+```
 {
   "tokens": [
     {
@@ -87,7 +103,7 @@ The format of the JSON configuration is shown below:
     "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
   ]
 }
-````
+```
 
 ### Tokens
 
@@ -100,9 +116,17 @@ is recommended such as `Enter the first part of the application namespace (ex: M
 In addition, you can force replacements by specifying the val "replacement" key for a given pattern as shown. Tokens
 with a replacement value specified will not prompt the user and will always replace matches with the specified value.
 
+If a conflict exists when attempting to rename a file, the rename operation will be skipped by default. To force an
+existing file to be overwritten by the rename process, add `"overwrite": true` to the token configuration.  **Note:**
+All matching tokens must have the `overwrite` flag set to true in order for a conflicting file to be overwritten. For
+example if you have patterns `foo` and `bar` and a file named `foobar.txt` that would conflict with another file after
+renaming, you must add the `overwrite` flag to both `foo` and `bar` tokens to replace the existing file with 
+`foobar.txt`.
+
 In the example below, the user would first be prompted: `Enter the name of you project (ex: MyProject):`. Then they 
 would be prompted: `Replace all instances of 'MyFunction' with:`. All instances of `text to always replace` will be
-replaced with `replacement value`.
+replaced with `replacement value`. `README.codetender.md` will be renamed `README.md` after deleting the original
+`README.md`.
 
 
 ```
@@ -117,9 +141,14 @@ replaced with `replacement value`.
     {
       "pattern": "text to always replace",
       "replacement": "replacement value"
+    },
+    {
+      "pattern": "README.codetender.md",
+      "replacement": "README.md",
+      "overwrite": true
     }
   ]
-````
+```
 
 ### Ignored Files
 
@@ -129,12 +158,12 @@ an array of globs (similar to the `.gitignore` syntax). Any files matching the g
 destination folder prior to processing. If `codetender new` is used with both a `.codetender` config and the `--file`
 option, the values in the `--file` file are appended after the values in the `.codetender` file.
 
-````
+```
   "ignore": [
       "ignore_this_folder/",
       "ignore_this_file.txt"
   ]
-````
+```
 
 ### Files Skipped by Token Replacement
 
@@ -145,12 +174,12 @@ values in the `.codetender` file. If `codetender new` is used with both a `.code
 the values in the `--file` file are appended after the
 values in the `.codetender` file.
 
-````
+```
   "noReplace": [
       "do_not_replace_tokens_in_this_folder/",
       "do_not_replace_tokens_in_this_file.txt"
   ]
-````
+```
 
 ### Scripts
 
@@ -161,12 +190,12 @@ performed. Note that scripts are executed relative to the target path so any con
 `noReplace` setting to skip replacing tokens in the content used by the after script. Otherwise, the content will be
 modified during token processing.
 
-````
+```
   "scripts": {
     "before": "node ./codetender-before.js",
     "after": "node ./codetender-after.js"
   }
-````
+```
 
 ### Delete
 
@@ -177,12 +206,12 @@ from the destination folder after processing. If `codetender new` is used with b
 `--file` option, the values in the `--file` file are appended after the values in the `.codetender` file.
 
 
-````
+```
   "delete": [
       "delete_this_folder/",
       "delete_this_file.txt"
   ]
-````
+```
 
 ### Banners
 
@@ -191,7 +220,7 @@ be a single string or an array of strings and will be logged after all processin
 Feel free to use same text font used by CodeTender which can be generated at http://patorjk.com/software/taag/ using 
 the "Small Slant" font.
 
-````
+```
   "banner": [
     "This is a banner.",
     "You can use it to display instructions, etc. after your template is processed.",
@@ -201,7 +230,7 @@ the "Small Slant" font.
     "/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/"
     "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
   ]
-````
+```
 
 ## Examples
 
@@ -213,7 +242,7 @@ example below, the `README.md` will not be copied to the destination folder and 
 `README.md`. Then the content `ProjectName` will be replaced in all files (including the new README.md) with content
 specified by the user in response to the prompt `Enter project name (ex: MyProject):`.
 
-````
+```
 {
   "tokens": [
     {
@@ -229,7 +258,11 @@ specified by the user in response to the prompt `Enter project name (ex: MyProje
     "README.md"
   ]
 }
-````
+```
+
+While this solution works for templates and `codetender new`, it does not work with `codetender replace` which does not
+support the `ignore` configuration. Therefore you can use `overwrite` to allow the renaming process to overwrite the
+existing `README.md` file.
 
 ### Executing an after script which is not processed and then is removed after processing
 
@@ -238,7 +271,7 @@ content and therefore should not be processed so the files are specified as `noR
 necessary for the `before` script since it is executed prior to processing. Both the `before` and `after` scripts and
 related content are deleted after processing.
 
-````
+```
 {
   "tokens": [
     {
@@ -259,4 +292,42 @@ related content are deleted after processing.
     "content-used-by-after-script.txt"
   ]
 }
-````
+```
+
+### API Usage
+
+Note that CodeTender is interactive by default and is designed primarily to be used via the CLI. When operated via the 
+API, the standard input will be read for any token replacement values unless tokens are provided in the configuration 
+object or specified file.
+
+```
+const CodeTender = require("codetender");
+
+const ct = new CodeTender();
+
+// Copy a template to a new folder and replace tokens
+ct.new({
+  template: 'path/to/template', // Path to local folder or git repo
+  folder: 'path/to/new/folder', // Destination folder (must not exist)
+  file: 'codetender-config.json', // Optional configuration file (see below)
+  logger: line => { console.log(line); }, // Optional logger to override default console
+  verbose: true, // Set to true for verbose output
+  quiet: false // Set to true to disable all output (overrides verbose: true)
+});
+
+// Replace tokens in an existing folder
+ct.replace({
+  folder: 'path/to/folder', // Path containing files with tokens to replace
+  file: 'codetender-config.json', // Optional configuration file (see below)
+  logger: line => { console.log(line); }, // Optional logger to override default console
+  verbose: true, // Set to true for verbose output
+  quiet: false // Set to true to disable all output (overrides verbose: true)
+});
+```
+
+Both `CodeTender.new()` and `CodeTender.replace()` accept a `config` object as a parameter and return a promise that is
+resolved when the process completes. This object may contain any of the configurations defined below. However, this 
+config is overwritten by any external configuration.
+
+Regardless of whether the default logger or custom logger is used,
+all log entries are appended to an array of strings which can be accessed using `CodeTender.logOutput`.

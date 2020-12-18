@@ -112,11 +112,17 @@ function defineReplaceTests(t, ct, config, verbose) {
   });
   t.test("Test logging", (t) => {
     t.ok(checkLog(ct.logOutput, "pattern -> replacement (content/files)"), "Replacement legend is correct in output");
+    t.ok(checkLog(ct.logOutput, "Could not rename the following files or folders due to naming conflicts:"), "Displays rename conflicts");
+    t.ok(checkLog(ct.logOutput, "  Conflict: foo.txt -> bar.txt"), "Displays file rename conflicts");
+    t.ok(checkLog(ct.logOutput, "  Conflict: sub -> folder"), "Displays folder rename conflicts");
     if (verbose) {
-      t.ok(checkLog(ct.logOutput, "foo -> bar (18/3)"), "Displays replacement counts");
+      t.ok(checkLog(ct.logOutput, "foo -> bar (19/4)"), "Displays replacement counts");
       t.ok(checkLog(ct.logOutput, "foo-something.txt -> bar-something.txt"), "Displays renamed files");
       t.ok(checkLog(ct.logOutput, "deep-sub -> deep-folder"), "Displays renamed folders");
-      t.ok(checkLog(ct.logOutput, "codetender-before.js (1)"), "Displays replacement details for files");
+      t.ok(checkLog(ct.logOutput, "Rename Conflict: foo.txt -> bar.txt in folder"), "Logs conflict details for files");
+      t.ok(checkLog(ct.logOutput, "  Skipping rename of foo.txt to bar.txt in folder"), "Logs conflict skipping for files");
+      t.ok(checkLog(ct.logOutput, "Rename Conflict: sub -> folder in folder"), "Logs conflict details for folders");
+      t.ok(checkLog(ct.logOutput, "  Skipping rename of sub to folder in folder"), "Logs conflict skipping for folders");
     }
     t.end();
   });
