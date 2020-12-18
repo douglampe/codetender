@@ -7,52 +7,9 @@ local folder can be a template. Just replace any text token in all file names an
 
 ## Installation
 
-CLI:
-
     npm install -g codetender
 
-Node.js:
-
-    npm install -s 
-
-## Basic Usage
-
-```
-const CodeTender = require("codetender");
-
-const ct = new CodeTender();
-
-// Copy a template to a new folder and replace tokens
-ct.new({
-  template: 'path/to/template', // Path to local folder or git repo
-  folder: 'path/to/new/folder', // Destination folder (must not exist)
-  file: 'codetender-config.json', // Optional configuration file (see below)
-  logger: line => { console.log(line); }, // Optional logger to override default console
-  verbose: true, // Set to true for verbose output
-  quiet: false // Set to true to disable all output (overrides verbose: true)
-});
-
-// Replace tokens in an existing folder
-ct.replace({
-  folder: 'path/to/folder', // Path containing files with tokens to replace
-  file: 'codetender-config.json', // Optional configuration file (see below)
-  logger: line => { console.log(line); }, // Optional logger to override default console
-  verbose: true, // Set to true for verbose output
-  quiet: false // Set to true to disable all output (overrides verbose: true)
-});
-```
-
-Both `CodeTender.new()` and `CodeTender.replace()` accept a `config` object as a parameter and return a promise that is
-resolved when the process completes. This object may contain any of the configurations defined below. However, this 
-config is overwritten by any external configuration.
-
-Regardless of whether the default logger or custom logger is used,
-all log entries are appended to an array of strings which can be accessed using `CodeTender.logOutput`.
-
-Note that CodeTender is interactive by default and the standard input will be read for any token replacement values
-unless tokens are provided in the configuration object or specified file.
-
-## CLI Usage
+## Usage
 
 ```
 Usage: codetender [options] [command]
@@ -70,9 +27,7 @@ Commands:
   help [command]           display help for command
 ```
 
-## Create New Project From Template
-
-### CLI
+### Create New Project From Template
 
     codetender new user/repository new_folder_name
 
@@ -84,33 +39,15 @@ OR
 
     codetender new ../relative/path/to/folder new_folder_name
 
-### API
+If the template includes a `.codetender` configuration file in the root folder, you will be prompted to enter specific 
+text which will replace placeholders in the template. If no configuration file exists, you will be prompted for each 
+token to replace and the replacement text. CodeTender will then create a folder and copy the files into the folder. If
+the files come from a git repository, the `.git` folder will be deleted to disconnect it from the original remote 
+branch. Finally, CodeTender will replace all of the tokens as specified in file names, folder names, and file content.
 
-    ct.new({ template: 'user/repository', folder: 'new_folder_name' });
-
-OR
-
-    ct.new({ template: 'https://repository.url.git', folder: 'new_folder_name' });
-
-OR
-
-    ct.new({ template: '../relative/path/to/folder', folder: 'new_folder_name' });
-
-If the template includes a `.codetender` configuration file, you will be prompted to enter specific text which will 
-replace placeholders in the template. If no configuration file exists, you will be prompted for each token to replace 
-and the replacement text. CodeTender will then create a folder and copy the files into the folder. If the files come 
-from a git repository, the `.git` folder will be deleted to disconnect it from the original remote branch. Finally, 
-CodeTender will replace all of the tokens as specified in file names, folder names, and file content.
-
-## Rename Tokens in Existing Folder
-
-### CLI
+### Rename Tokens in Existing Folder
 
     codetender replace path/to/folder -f codetender-config.json
-
-### API
-
-    ct.replace({ folder: 'path/to/folder', file: 'codetender-config.json' });
 
 You will be prompted for each token to replace and the replacement text. CodeTender will replace all of the tokens as 
 specified in file names, folder names, and file content. You can specify a JSON configuration file using the `--file`
@@ -356,3 +293,41 @@ related content are deleted after processing.
   ]
 }
 ```
+
+### API Usage
+
+Note that CodeTender is interactive by default and is designed primarily to be used via the CLI. When operated via the 
+API, the standard input will be read for any token replacement values unless tokens are provided in the configuration 
+object or specified file.
+
+```
+const CodeTender = require("codetender");
+
+const ct = new CodeTender();
+
+// Copy a template to a new folder and replace tokens
+ct.new({
+  template: 'path/to/template', // Path to local folder or git repo
+  folder: 'path/to/new/folder', // Destination folder (must not exist)
+  file: 'codetender-config.json', // Optional configuration file (see below)
+  logger: line => { console.log(line); }, // Optional logger to override default console
+  verbose: true, // Set to true for verbose output
+  quiet: false // Set to true to disable all output (overrides verbose: true)
+});
+
+// Replace tokens in an existing folder
+ct.replace({
+  folder: 'path/to/folder', // Path containing files with tokens to replace
+  file: 'codetender-config.json', // Optional configuration file (see below)
+  logger: line => { console.log(line); }, // Optional logger to override default console
+  verbose: true, // Set to true for verbose output
+  quiet: false // Set to true to disable all output (overrides verbose: true)
+});
+```
+
+Both `CodeTender.new()` and `CodeTender.replace()` accept a `config` object as a parameter and return a promise that is
+resolved when the process completes. This object may contain any of the configurations defined below. However, this 
+config is overwritten by any external configuration.
+
+Regardless of whether the default logger or custom logger is used,
+all log entries are appended to an array of strings which can be accessed using `CodeTender.logOutput`.
