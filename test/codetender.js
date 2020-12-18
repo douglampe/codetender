@@ -4,7 +4,7 @@ var t = require('tap'),
   fsExtra = require('fs-extra'),
   mkdirp = require('mkdirp'),
   path = require('path'),
-  Codetender = require('../bin/codetender.js');
+  CodeTender = require('../bin/codetender.js');
 
 // Make sure working directory is this folder:
 process.chdir(__dirname); 
@@ -39,16 +39,24 @@ function checkContents(file, expected) {
   return contents === expected;
 }
 
+function checkLog(log, expected) {
+  return log.filter(l => l.indexOf(expected) >= 0).length === 1;
+}
+
 function cleanupNew(err) {
-  rimraf(path.join(__dirname, 'output/test-new'), function() {
-    if (err) {
-      t.threw(err);
-    }
-  });
+  return cleanup('output/test-new', err);
 }
 
 function cleanupReplace(err) {
-  rimraf(path.join(__dirname, 'output/test-replace'), function() {
+  return cleanup('output/test-replace', err);
+}
+
+function cleanupInvalidGit(err) {
+  return cleanup('output/test-invalid-git', err);
+}
+
+function cleanup(folder, err) {
+  rimraf(path.join(__dirname, folder), function() {
     if (err) {
       t.threw(err);
     }
@@ -63,10 +71,10 @@ function testNew(t) {
     file: 'sample/codetender.json'
   };
 
-  var ctNew = new Codetender();
+  var ctNew = new CodeTender();
   ctNew.new(config).then(function() {
     t.teardown(cleanupNew);
-    t.plan(17);
+    t.plan(18);
     t.ok(checkFile('output/test-new/bar.js'), "foo replaced with bar");
     t.ok(checkDir('output/test-new/folder'), "sub replaced with folder");
     t.ok(checkContents('output/test-new/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), "foo, CodeTender, and sub all replaced");
@@ -83,7 +91,8 @@ function testNew(t) {
     t.notOk(checkDir('output/test-new/delete-folder'), "delete folders are removed");
     t.notOk(checkFile('output/test-new/codetender-before.js'), "codetender-before is removed");
     t.notOk(checkFile('output/test-new/codetender-after.js'), "codetender-after is removed");
-    t.equal(ctNew.logOutput.filter(l => l == "This is a test. If this were a real template, there would be some useful info here.").length, 1, "Banner appears only once");
+    t.ok(checkContents('output/test-new/foo/README.md', '# This folder should still be called foo due to noReplace'), "noReplace folders aren't processed");
+    t.ok(checkLog(ctNew.logOutput, "This is a test. If this were a real template, there would be some useful info here."), "Banner appears only once");
     t.match
   }).catch(t.threw);
 }
@@ -124,11 +133,11 @@ function testReplace(t) {
               }
               else
               {
-                let ctReplace = new Codetender();
+                let ctReplace = new CodeTender();
 
                 ctReplace.replace(config).then(function() {
                   t.teardown(cleanupReplace);
-                  t.plan(7);
+                  t.plan(12);
                   t.ok(checkContents('output/test-replace/README.md', '# This is a sample Served template.'), "README is processed");
                   t.ok(checkContents('output/test-replace/no-replace-file.txt', 'foo'), "noReplace files are skipped");
                   t.ok(checkFile('output/test-replace/bar.js'), "foo replaced with bar");
@@ -136,6 +145,11 @@ function testReplace(t) {
                   t.ok(checkContents('output/test-replace/.git/foo.txt', 'foo'), ".git is ignored");
                   t.notOk(checkFile('output/test-replace/delete-file.txt'), "delete files are removed");
                   t.notOk(checkDir('output/test-replace/delete-folder'), "delete folders are removed");
+                  t.ok(checkContents('output/test-replace/foo/README.md', '# This folder should still be called foo due to noReplace'), "noReplace folders aren't processed");
+                  t.ok(checkLog(ctReplace.logOutput, "foo -> bar (8/3)"), "Displays replacement counts");
+                  t.ok(checkLog(ctReplace.logOutput, "foo-something.txt -> bar-something.txt"), "Displays renamed files");
+                  t.ok(checkLog(ctReplace.logOutput, "deep-sub -> deep-folder"), "Displays renamed folders");
+                   t.ok(checkLog(ctReplace.logOutput, "codetender-before.js (1)"), "Displays replacement details for files");      
                 }).catch(t.threw);
               }
             });
@@ -148,15 +162,16 @@ function testReplace(t) {
 function testInvalidGit(t) {
   const config = {
     template: 'http://invalidgitrepo.com/invalid.git', 
-    folder: './output/test-new',
+    folder: './output/test-invalid-git',
     verbose: true
   };
 
-  const ctInvalidGit = new Codetender();
-
+  const ctInvalidGit = new CodeTender();
+  
+  t.teardown(cleanupInvalidGit);
   t.plan(2);
   t.rejects(ctInvalidGit.new(config), "Invalid git repo throws error").then(function () {
-    t.equal(ctInvalidGit.logOutput.filter(l => l == "Cloning into \'folder\'...\nfatal: unable to access \'http://invalidgitrepo.com/invalid.git/\': Could not resolve host: invalidgitrepo.com\n").length, 1, "Invalid git repo logs appropriate message");
+    t.ok(checkLog(ctInvalidGit.logOutput, "fatal: unable to access \'http://invalidgitrepo.com/invalid.git/\': Could not resolve host: invalidgitrepo.com\n"), "Invalid git repo logs appropriate message");
   });
 }
 

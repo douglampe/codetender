@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { Command } = require('commander');
 const program = new Command();
-const codetender = require('./codetender.js');
+const CodeTender = require('./codetender.js');
 const pkgInfo = require('../package.json');
 
 /**
@@ -57,7 +57,7 @@ function handleNew(template, folder, options) {
     file: options ? options.file : null
   };
 
-  codetender.new(config).then(process.exit);
+  new CodeTender().new(config).then(process.exit);
 }
 
 /**
@@ -86,7 +86,7 @@ function handleReplace(folder, options) {
     file: options ? options.file : null
   };
 
-  codetender.replace(config);
+  new CodeTender().replace(config);
 }
 
 main();
