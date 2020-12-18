@@ -1,7 +1,7 @@
 {
   "name": "codetender",
-  "version": "0.0.17-alpha",
-  "description": "Codetender scaffolding engine",
+  "version": "0.0.18-alpha",
+  "description": "CodeTender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
   "repository": {

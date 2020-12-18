@@ -11,13 +11,19 @@
     {
       "pattern": "README.codetender.md",
       "replacement": "README.md"
+    },
+    {
+      "pattern": "Won't find this anywhere",
+      "replacement": "foo"
     }
   ],
   "ignore": [
     "README.md"
   ],
   "noReplace": [
-    "no-replace-file.txt"
+    "no-replace-file.txt",
+    "codetender.json",
+    "foo/"
   ],
   "delete": [
     "delete-folder/",
