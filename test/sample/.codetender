@@ -11,10 +11,6 @@
     {
       "pattern": "sub",
       "replacement": "folder"
-    },
-    {
-      "pattern": "README.codetender.md",
-      "replacement": "README.md"
     }
   ],
   "ignore": [
