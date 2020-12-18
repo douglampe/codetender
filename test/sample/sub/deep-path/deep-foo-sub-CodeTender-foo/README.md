@@ -1,0 +1,1 @@
+# This folder should be renamed to deep-bar-folder-Served-bar and the following text should match after processing: deep-foo-sub-CodeTender-foo

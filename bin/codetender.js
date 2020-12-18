@@ -772,7 +772,7 @@ function CodeTender() {
     if (tokens.length > 0) {
 
       log('Successfully replaced the following tokens where found:');
-      log('pattern -> replacement (files/matches)');
+      log('pattern -> replacement (content/files)');
       log('--------------------------------------');
 
       Object.keys(me.tokenMap).forEach((key) => {

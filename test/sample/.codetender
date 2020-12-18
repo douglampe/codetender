@@ -23,7 +23,6 @@
     "**/ignore-file.txt"
   ],
   "noReplace": [
-    "noReplace-folder/",
     "codetender-*.js"
   ],
   "scripts": {

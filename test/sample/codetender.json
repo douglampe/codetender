@@ -21,6 +21,7 @@
     "README.md"
   ],
   "noReplace": [
+    "noReplace-folder/",
     "no-replace-file.txt",
     "codetender.json",
     "foo/"
