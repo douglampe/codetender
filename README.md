@@ -12,13 +12,13 @@ local folder can be a template. Just replace any text token in all file names an
 ## Usage
 
 ```
-Usage: codetender [options] [command]
+Usage: codetender-cli [options] [command]
 
 Options:
-  -V, --version            output the version number
-  -v, --verbose            Display verbose output
-  -q, --quiet              Do not output to console (overrides --verbose)
-  -f --file <file>         Replace tokens as specified in a file
+  -v, --version            Display current version number
+  -d, --debug              Display debugging output
+  -q, --quiet              Do not output to console (overrides --debug)
+  -f, --file <file>        Replace tokens as specified in a file
   -h, --help               display help for command
 
 Commands:
@@ -311,7 +311,7 @@ ct.new({
   folder: 'path/to/new/folder', // Destination folder (must not exist)
   file: 'codetender-config.json', // Optional configuration file (see below)
   logger: line => { console.log(line); }, // Optional logger to override default console
-  verbose: true, // Set to true for verbose output
+  verbose: true, // Set to true for verbose output (same as --debug CLI flag)
   quiet: false // Set to true to disable all output (overrides verbose: true)
 });
 
@@ -320,7 +320,7 @@ ct.replace({
   folder: 'path/to/folder', // Path containing files with tokens to replace
   file: 'codetender-config.json', // Optional configuration file (see below)
   logger: line => { console.log(line); }, // Optional logger to override default console
-  verbose: true, // Set to true for verbose output
+  verbose: true, // Set to true for verbose output (same as --debug CLI flag)
   quiet: false // Set to true to disable all output (overrides verbose: true)
 });
 ```

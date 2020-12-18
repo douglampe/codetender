@@ -9,10 +9,10 @@ const pkgInfo = require('../package.json');
  */
 async function main() {
   program
-    .version(pkgInfo.version)
-    .option('-v, --verbose', 'Display verbose output')
-    .option('-q, --quiet', 'Do not output to console (overrides --verbose)')
-    .option('-f --file <file>', 'Replace tokens as specified in a file');
+    .version(pkgInfo.version, '-v, --version', 'Display current version number')
+    .option('-d, --debug', 'Display debugging output')
+    .option('-q, --quiet', 'Do not output to console (overrides --debug)')
+    .option('-f, --file <file>', 'Replace tokens as specified in a file');
 
   program
     .command('new <template> <folder>')
@@ -42,11 +42,11 @@ function handleNew(template, folder, options) {
 
   if (options && options.verbose) {
 
-    console.log('Verbose mode enabled.');
+    console.log('Debug output enabled.');
     console.log("Command Line Arguments:")
     console.log("  Template: " + template);
     console.log("  Folder: " + folder);
-    console.log("  Verbose: true");
+    console.log("  Debug: true");
   }
 
   const config = {
@@ -73,10 +73,10 @@ function handleReplace(folder, options) {
   }
 
   if (options && options.verbose && !options.quiet) {
-    console.log('Verbose mode enabled.');
+    console.log('Debug mode enabled.');
     console.log("Command Line Arguments:")
     console.log("  Folder: " + folder);
-    console.log("  Verbose: true");
+    console.log("  Debug: true");
   }
 
   const config = {
