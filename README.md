@@ -231,6 +231,56 @@ the "Small Slant" font.
     "\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   "
   ]
 ```
+## Advanced Features
+
+### Remote Templates
+
+CodeTender supports remote templates where a single template configuration file can define one or more remote templates
+which are cloned and processed prior to processing the main template configuration. This technique can be used to
+create a template based on an existing repository by simply providing prompts for token replacement and cloning the
+existing repository into the root of the target folder. Remote templates can also be used to create sub-folders under
+the root folder from git repositories.
+
+In the example below, a repository with a single file named `EXAMPLE` is cloned into the root folder and a folder named
+`foo`. In the root folder, the contents of the file (`one`) are replaced with `two`. In the `foo` folder, the name of 
+the file is changed from `EXAMPLE` to `foo`. The file in the root folder will still be `EXAMPLE` because all remotes
+are ignored when processing the root remote. Finally, the user will be prompted to replace all instances of `foo`. Note
+that this is handy for composite templates since the placeholders can be replaced for each remote template for
+uniformity prior to prompting the user for replacement values.
+
+**Note:** Currently remote configuration only supports the root folder (`/`), or its immediate sub-folders. Therefore
+the `dest` value cannot contain `/` or `\` unless it is indicating the root folder.
+
+```
+  "remote": [
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "/",
+      "tokens": [
+        {
+          "pattern": "one",
+          "replacement": "two"
+        }
+      ]
+    },
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "foo",
+      "tokens": [
+        {
+          "pattern": "EXAMPLE",
+          "replacement": "foo"
+        }
+      ]
+    }
+  ],
+  "tokens": [
+    {
+      "pattern": "foo",
+      "prompt": "Enter new value for foo:"
+    }
+  ]
+```
 
 ## Examples
 
