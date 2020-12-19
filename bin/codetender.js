@@ -115,7 +115,7 @@ function CodeTender() {
         ignoredFiles: {},
         scripts: {},
         banner: [],
-        configPaths: [ null ],
+        configPaths: [null],
         errors: []
       },
       config
@@ -286,19 +286,21 @@ function CodeTender() {
     const tasks = [];
 
     me.config.remote.forEach(r => {
-      tasks.push(() => {
-        ct = new CodeTender();
-        log("");
-        log("Processing remote template in " + r.dest)
-        return ct.replace({
-          folder: path.join(me.config.folder, r.dest),
-          tokens: r.tokens,
-          noReplace: me.config.remote.filter(r2 => r.dest === "/" && r2.dest != "/").map(r2 => r2.dest + "/"),
-          verbose: me.config.verbose,
-          quiet: me.config.quiet,
-          noSplash: true
+      if (r.tokens && r.tokens.length > 0) {
+        tasks.push(() => {
+          ct = new CodeTender();
+          log("");
+          log("Processing remote template in " + r.dest)
+          return ct.replace({
+            folder: path.join(me.config.folder, r.dest),
+            tokens: r.tokens,
+            noReplace: me.config.remote.filter(r2 => r.dest === "/" && r2.dest != "/").map(r2 => r2.dest + "/"),
+            verbose: me.config.verbose,
+            quiet: me.config.quiet,
+            noSplash: true
+          });
         });
-      });
+      }
     });
 
     return runTasks(tasks);
@@ -787,7 +789,7 @@ function CodeTender() {
 
           // If token is flagged as overwrite, delete and rename. Otherwise skip.
           if (tokens.find(t => t.overwrite)) {
-            
+
             verboseLog("  Deleting " + oldItem + " and replacing with " + item);
             return deferredUnlink(newFile).then(() => {
               return deferredRename(oldFile, newFile);
@@ -830,7 +832,7 @@ function CodeTender() {
     });
     return deferred.promise;
   }
-  
+
   // Wrap unlink to return a promise
   function deferredUnlink(path) {
     const deferred = q.defer();

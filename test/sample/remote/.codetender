@@ -19,6 +19,10 @@
           "replacement": "foo"
         }
       ]
+    },
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "four"
     }
   ],
   "tokens": [

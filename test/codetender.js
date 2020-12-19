@@ -48,6 +48,15 @@ function checkLog(log, expected) {
   }
 }
 
+function checkNoLog(log, expected) {
+  if (log.filter(l => l.indexOf(expected) >= 0).length === 0) {
+    return true;
+  } else {
+    console.log(log);
+    return false;
+  }
+}
+
 function cleanup(folder, err) {
   rimraf(path.join(__dirname, folder), function () {
     if (err) {
@@ -122,7 +131,6 @@ function defineReplaceTests(t, ct, config, verbose) {
       t.ok(checkLog(ct.logOutput, "Rename Conflict: foo.txt -> bar.txt in folder"), "Logs conflict details for files");
       t.ok(checkLog(ct.logOutput, "  Skipping rename of foo.txt to bar.txt in folder"), "Logs conflict skipping for files");
       t.ok(checkLog(ct.logOutput, "Rename Conflict: sub -> folder in folder"), "Logs conflict details for folders");
-      t.ok(checkLog(ct.logOutput, "  Skipping rename of sub to folder in folder"), "Logs conflict skipping for folders");
     }
     t.end();
   });
@@ -156,6 +164,10 @@ function testRemote(t, verbose) {
       t.test("Test remote configs", (t) => {
         t.ok(checkContents(config.folder + '/EXAMPLE', 'three'), "root is processed");
         t.ok(checkContents(config.folder + '/bar/EXAMPLE', 'bar'), "folder is processed");
+        t.ok(checkContents(config.folder + '/four/EXAMPLE', 'one'), "template with no tokens is cloned");
+        t.ok(checkLog(ct.logOutput, "Processing remote template in /"), "Logs root processing");
+        t.ok(checkLog(ct.logOutput, "Processing remote template in foo"), "Logs folder processing");
+        t.ok(checkNoLog(ct.logOutput, "Processing remote template in four"), "Does not log remote with no tokens");
         t.end();
       });
     });
