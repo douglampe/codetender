@@ -247,6 +247,27 @@ function testInvalidGit(t, verbose) {
   }).catch(t.threw);
 }
 
+function testInvalidRemoteConfig(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-invalid-remote-config' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/invalid-remote-config.json'
+  };
+
+  t.test("Test codetender new with invalid remote config", (t) => {
+
+    let ct = new CodeTender();
+
+    t.plan(2);
+    t.teardown((err) => { cleanup(config.folder, err) });
+    t.rejects(ct.new(config), "Invalid remote config throws error").then(function () {
+      t.ok(checkLog(ct.logOutput, "Configuration Error: Remote destinations must be one level down from the root."), "Invalid remote config logs appropriate message");
+    });
+  }).catch(t.threw);
+}
+
 testNew(t, false);
 
 testReplace(t, true);
@@ -254,3 +275,5 @@ testReplace(t, true);
 testInvalidGit(t, false);
 
 testRemote(t, false);
+
+testInvalidRemoteConfig(t, false);

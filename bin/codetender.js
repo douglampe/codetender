@@ -231,7 +231,14 @@ function CodeTender() {
           me.config.banner = me.config.banner.concat(fileConfig.banner);
         }
 
-        deferred.resolve();
+        fileConfig.remote.forEach(r => {
+          let temp = r.dest.match(/\\\//g)
+        });
+        if (fileConfig.remote && fileConfig.remote.find(r => r.dest != "/" && r.dest.match(/[\\\/]/g))) {
+          deferred.reject("Configuration Error: Remote destinations must be one level down from the root.");
+        } else {
+          deferred.resolve();
+        }
       }
     });
 
