@@ -231,9 +231,6 @@ function CodeTender() {
           me.config.banner = me.config.banner.concat(fileConfig.banner);
         }
 
-        fileConfig.remote.forEach(r => {
-          let temp = r.dest.match(/\\\//g)
-        });
         if (fileConfig.remote && fileConfig.remote.find(r => r.dest != "/" && r.dest.match(/[\\\/]/g))) {
           deferred.reject("Configuration Error: Remote destinations must be one level down from the root.");
         } else {
@@ -499,6 +496,7 @@ function CodeTender() {
       verboseLog("Running before script...");
 
       return runChildProcess(me.config.scripts.before);
+      // return runChildProcess(path.join(me.config.tempPath, me.config.scripts.before), me.config.targetPath);
     }
     else {
       return Promise.resolve();
@@ -861,6 +859,7 @@ function CodeTender() {
       verboseLog("Running after script...");
 
       return runChildProcess(me.config.scripts.after);
+      // return runChildProcess(path.combine(me.config.tempPath, me.config.scripts.after), me.config.targetPath);
     }
     else {
       return Promise.resolve();
