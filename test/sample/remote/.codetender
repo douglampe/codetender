@@ -1,0 +1,34 @@
+{
+  "remote": [
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "/",
+      "tokens": [
+        {
+          "pattern": "one",
+          "replacement": "two"
+        }
+      ]
+    },
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "foo",
+      "tokens": [
+        {
+          "pattern": "one",
+          "replacement": "foo"
+        }
+      ]
+    }
+  ],
+  "tokens": [
+    {
+      "pattern": "foo",
+      "replacement": "bar"
+    },
+    {
+      "pattern": "two",
+      "replacement": "three"
+    }
+  ]
+}

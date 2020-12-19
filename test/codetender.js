@@ -59,14 +59,14 @@ function cleanup(folder, err) {
 function testNew(t, verbose) {
   const config = {
     verbose: verbose,
-    template: 'sample',
+    template: 'sample/local',
     folder: './output/test-new' + (verbose ? '-verbose' : ''),
-    file: 'sample/codetender.json'
+    file: 'sample/local/codetender.json'
   };
 
   t.test("Test codetender new", (t) => {
     var ct = new CodeTender();
-    
+
     ct.new(config).then(function () {
       t.teardown((err) => { cleanup(config.folder, err) });
       t.plan(8);
@@ -134,12 +134,40 @@ function defineReplaceTests(t, ct, config, verbose) {
 
 }
 
+function testRemote(t, verbose) {
+  const config = {
+    verbose: verbose,
+    template: 'sample/remote',
+    folder: './output/test-remote' + (verbose ? '-verbose' : ''),
+    tokens: [
+      {
+        pattern: /[\r\n]/g,
+        replacement: ""
+      }
+    ]
+  };
+
+  t.test("Test codetender new with remote templates", (t) => {
+    var ct = new CodeTender();
+
+    ct.new(config).then(function () {
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.plan(1);
+      t.test("Test remote configs", (t) => {
+        t.ok(checkContents(config.folder + '/EXAMPLE', 'three'), "root is processed");
+        t.ok(checkContents(config.folder + '/bar/EXAMPLE', 'bar'), "folder is processed");
+        t.end();
+      });
+    });
+  }).catch(t.threw);
+}
+
 function testReplace(t, verbose) {
-  var template = 'sample',
+  var template = 'sample/local',
     config = {
       verbose: verbose,
       folder: './output/test-replace' + (verbose ? '-verbose' : ''),
-      file: 'sample/codetender.json',
+      file: 'sample/local/codetender.json',
       tokens: [
         {
           pattern: 'CodeTender',
@@ -196,7 +224,7 @@ function testInvalidGit(t, verbose) {
   };
 
   t.test("Test codetender new with invalid repo", (t) => {
-    
+
     let ct = new CodeTender();
 
     t.plan(2);
@@ -212,3 +240,5 @@ testNew(t, false);
 testReplace(t, true);
 
 testInvalidGit(t, false);
+
+testRemote(t, false);
