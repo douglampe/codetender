@@ -317,8 +317,7 @@ function CodeTender() {
    * Read tokens to replace and values from the command line.
    */
   function getTokens() {
-    var missingValues,
-      tokens = me.config.tokens;
+    var tokens = me.config.tokens;
 
     if (tokens.length === 0) {
       verboseLog("Reading tokens from command line...");
@@ -326,12 +325,7 @@ function CodeTender() {
       return getTokensFromCommandLine();
     }
     else {
-      tokens.forEach(function (token) {
-        if (!token.replacement === null) {
-          missingValues = true;
-        }
-      });
-      if (missingValues) {
+      if (tokens.find(t => !t.replacement)) {
         verboseLog("Reading token values from command line...");
 
         return getTokensFromPrompts();

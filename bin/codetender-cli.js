@@ -52,7 +52,7 @@ function handleNew(template, folder, options) {
   const config = {
     template: template,
     folder: folder,
-    verbose: options ? options.verbose : false,
+    verbose: options ? options.debug : false,
     quiet: options ? options.quiet : false,
     file: options ? options.file : null
   };
@@ -72,7 +72,7 @@ function handleReplace(folder, options) {
     options = options.parent;
   }
 
-  if (options && options.verbose && !options.quiet) {
+  if (options && options.debug && !options.quiet) {
     console.log('Debug mode enabled.');
     console.log("Command Line Arguments:")
     console.log("  Folder: " + folder);
