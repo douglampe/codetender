@@ -1,0 +1,8 @@
+{
+    "remote": [
+    {
+      "src": "https://github.com/rtyley/small-test-repo.git",
+      "dest": "five/six"
+    }
+  ]
+}

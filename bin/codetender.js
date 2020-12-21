@@ -10,6 +10,8 @@ var fs = require('graceful-fs'),
   exec = require('child_process').exec,
   replaceInFile = require('replace-in-file');
 
+const tempPath = "../__CODETENDER_TEMP";
+
 module.exports = CodeTender;
 
 function CodeTender() {
@@ -37,14 +39,15 @@ function CodeTender() {
       return deferred.promise;
     }
 
-    splash();
-    log("Serving up code...");
+    splash("Serving up code...");
 
     runTasks([
       copyOrClone,
       logCloneSuccess,
       readTemplateConfig,
       readFileConfig,
+      cloneRemoteTemplates,
+      processRemoteTemplates,
       cleanupIgnored,
       getTokens,
       prepTokens,
@@ -77,8 +80,7 @@ function CodeTender() {
       return deferred.promise;
     }
 
-    splash();
-    log("Replacing in place...");
+    splash("Replacing in place...");
 
     runTasks([
       readFileConfig,
@@ -105,23 +107,29 @@ function CodeTender() {
         logger: console.log,
         tokens: [],
         noReplace: [],
+        remote: [],
+        include: [],
         ignore: [],
         delete: [],
         notReplacedFiles: {},
         ignoredFiles: {},
         scripts: {},
         banner: [],
+        configPaths: [null],
         errors: []
       },
       config
     );
 
+    // Set target path
+    me.config.targetPath = path.resolve(config.folder);
+
     // Always ignore .git folder
-    if (me.config.noReplace.indexOf('.git/') === -1) {
-      me.config.noReplace.push('.git/');
+    if (me.config.noReplace.indexOf('**/.git/') === -1) {
+      me.config.noReplace.push('**/.git/');
     }
-    if (me.config.ignore.indexOf('.git/') === -1) {
-      me.config.ignore.push('.git/');
+    if (me.config.ignore.indexOf('**/.git/') === -1) {
+      me.config.ignore.push('**/.git/');
     }
 
     // Always ignore the .codetender file
@@ -131,8 +139,6 @@ function CodeTender() {
     if (me.config.ignore.indexOf('.codetender') === -1) {
       me.config.ignore.push('.codetender');
     }
-
-    me.config.targetPath = path.resolve(config.folder);
   }
 
   /**
@@ -173,6 +179,7 @@ function CodeTender() {
         }
       }
       else {
+        me.config.configPaths.push(file);
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens;
 
@@ -199,6 +206,11 @@ function CodeTender() {
           }
         }
 
+        // Append remote
+        if (fileConfig.remote) {
+          me.config.remote = me.config.remote.concat(fileConfig.remote);
+        }
+
         // Append noReplace
         if (fileConfig.noReplace) {
           me.config.noReplace = me.config.noReplace.concat(fileConfig.noReplace);
@@ -219,11 +231,86 @@ function CodeTender() {
           me.config.banner = me.config.banner.concat(fileConfig.banner);
         }
 
-        deferred.resolve();
+        if (fileConfig.remote && fileConfig.remote.find(r => r.dest != "/" && r.dest.match(/[\\\/]/g))) {
+          deferred.reject("Configuration Error: Remote destinations must be one level down from the root.");
+        } else {
+          deferred.resolve();
+        }
       }
     });
 
     return deferred.promise;
+  }
+
+  /**
+   * Clone remote templates
+   */
+  function cloneRemoteTemplates() {
+    const tasks = [];
+
+    if (me.config.remote.length > 0) {
+      log("Remote templates found.")
+
+      let rootTemplates = me.config.remote.find(r => r.dest === "/");
+
+      if (rootTemplates.length > 1) {
+        return q.reject("More than one remote root template was specified. Aborting.");
+      }
+
+
+      if (rootTemplates.length == 0) {
+        me.config.tempPath = me.config.targetPath;
+      }
+      else {
+        me.config.tempPath = path.resolve(me.config.targetPath, tempPath);
+        if (fs.existsSync(me.config.tempPath)) {
+          return q.reject("Temporary folder " + me.config.tempPath + " already exists. Please delete temporary folder and try again.");
+        }
+        me.config.delete.push(tempPath);
+        verboseLog("Renaming initial template folder to temporary folder:");
+        verboseLog("  " + me.config.targetPath + " -> " + me.config.tempPath);
+      }
+
+      return deferredRename(me.config.targetPath, me.config.tempPath).then(() => {
+        me.config.remote.forEach((i) => {
+          tasks.push(() => { return gitClone(i.src, i.dest === "/" ? me.config.targetPath : path.join(me.config.targetPath, i.dest)); })
+        });
+        tasks.push(() => {
+          copyFromFs(me.config.tempPath, me.config.targetPath);
+        });
+        return runTasks(tasks);
+      });
+    }
+    else {
+      return q.resolve();
+    }
+  }
+
+  /**
+   * Process token replacement in remote templates
+   */
+  function processRemoteTemplates() {
+    const tasks = [];
+
+    me.config.remote.forEach(r => {
+      if (r.tokens && r.tokens.length > 0) {
+        tasks.push(() => {
+          ct = new CodeTender();
+          log("");
+          log("Processing remote template in " + r.dest)
+          return ct.replace({
+            folder: path.join(me.config.folder, r.dest),
+            tokens: r.tokens,
+            noReplace: me.config.remote.filter(r2 => r.dest === "/" && r2.dest != "/").map(r2 => r2.dest + "/"),
+            verbose: me.config.verbose,
+            quiet: me.config.quiet,
+            noSplash: true
+          });
+        });
+      }
+    });
+
+    return runTasks(tasks);
   }
 
   /**
@@ -240,7 +327,7 @@ function CodeTender() {
     }
     else {
       tokens.forEach(function (token) {
-        if (!token.replacement) {
+        if (!token.replacement === null) {
           missingValues = true;
         }
       });
@@ -674,8 +761,7 @@ function CodeTender() {
 
   // Rename an item in the specified folder
   function rename(folder, item) {
-    var deferred = q.defer(),
-      oldFile = path.join(folder, item),
+    var oldFile = path.join(folder, item),
       oldItem = item,
       newFile,
       tokens = [];
@@ -693,7 +779,7 @@ function CodeTender() {
     if (newFile !== oldFile) {
       if (me.config.notReplacedFiles[oldFile]) {
         verboseLog("Skipping file marked noReplace: " + oldFile);
-        deferred.resolve();
+        q.resolve();
       }
       else {
         tokens.forEach(t => {
@@ -710,21 +796,12 @@ function CodeTender() {
 
           // If token is flagged as overwrite, delete and rename. Otherwise skip.
           if (tokens.find(t => t.overwrite)) {
+
             verboseLog("  Deleting " + oldItem + " and replacing with " + item);
-            fs.unlink(newFile, err => {
-              if (err) {
-                deferred.reject(err);
-              } else {
-                fs.rename(oldFile, newFile, function (err) {
-                  if (err) {
-                    deferred.reject(err);
-                  }
-                  else {
-                    deferred.resolve();
-                  }
-                });
-              }
-            })
+            return deferredUnlink(newFile).then(() => {
+              return deferredRename(oldFile, newFile);
+            });
+
           } else {
             verboseLog("  Skipping rename of " + oldItem + " to " + item + " in folder " + folder);
             me.config.errors.push({
@@ -733,25 +810,48 @@ function CodeTender() {
               old: oldItem,
               new: item
             });
-            deferred.resolve();
+            return q.resolve();
           }
         }
         else {
           verboseLog("Renaming file " + oldFile + " to " + newFile);
-          fs.rename(oldFile, newFile, function (err) {
-            if (err) {
-              deferred.reject(err);
-            }
-            else {
-              deferred.resolve();
-            }
-          });
+          return deferredRename(oldFile, newFile);
         }
       }
     } else {
-      deferred.resolve();
+      q.resolve();
     }
 
+    return q.resolve;
+  }
+
+  // Wrap rename to return a promise
+  function deferredRename(oldPath, newPath) {
+    const deferred = q.defer();
+
+    fs.rename(oldPath, newPath, err => {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        deferred.resolve();
+      }
+
+    });
+    return deferred.promise;
+  }
+
+  // Wrap unlink to return a promise
+  function deferredUnlink(path) {
+    const deferred = q.defer();
+
+    fs.unlink(path, err => {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        deferred.resolve();
+      }
+
+    });
     return deferred.promise;
   }
 
@@ -820,7 +920,7 @@ function CodeTender() {
         }
       });
 
-      let conflictErrors = me.config.errors.filter(e => e.type === "Rename Conflict" );
+      let conflictErrors = me.config.errors.filter(e => e.type === "Rename Conflict");
       if (conflictErrors.length > 0) {
         log('Could not rename the following files or folders due to naming conflicts:');
 
@@ -859,12 +959,17 @@ function CodeTender() {
   /**
    * Display splash screen
    */
-  function splash() {
-    log('');
-    log('  _____        __    __              __       ');
-    log(' / ___/__  ___/ /__ / /____ ___  ___/ /__ ____');
-    log('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
-    log('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
+  function splash(tag) {
+    if (!me.config.noSplash) {
+      log('');
+      log('  _____        __    __              __       ');
+      log(' / ___/__  ___/ /__ / /____ ___  ___/ /__ ____');
+      log('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
+      log('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
+      if (tag) {
+        log(tag);
+      }
+    }
   }
 
   /**

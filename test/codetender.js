@@ -48,6 +48,15 @@ function checkLog(log, expected) {
   }
 }
 
+function checkNoLog(log, expected) {
+  if (log.filter(l => l.indexOf(expected) >= 0).length === 0) {
+    return true;
+  } else {
+    console.log(log);
+    return false;
+  }
+}
+
 function cleanup(folder, err) {
   rimraf(path.join(__dirname, folder), function () {
     if (err) {
@@ -59,14 +68,14 @@ function cleanup(folder, err) {
 function testNew(t, verbose) {
   const config = {
     verbose: verbose,
-    template: 'sample',
+    template: 'sample/local',
     folder: './output/test-new' + (verbose ? '-verbose' : ''),
-    file: 'sample/codetender.json'
+    file: 'sample/local/codetender.json'
   };
 
   t.test("Test codetender new", (t) => {
     var ct = new CodeTender();
-    
+
     ct.new(config).then(function () {
       t.teardown((err) => { cleanup(config.folder, err) });
       t.plan(8);
@@ -122,7 +131,6 @@ function defineReplaceTests(t, ct, config, verbose) {
       t.ok(checkLog(ct.logOutput, "Rename Conflict: foo.txt -> bar.txt in folder"), "Logs conflict details for files");
       t.ok(checkLog(ct.logOutput, "  Skipping rename of foo.txt to bar.txt in folder"), "Logs conflict skipping for files");
       t.ok(checkLog(ct.logOutput, "Rename Conflict: sub -> folder in folder"), "Logs conflict details for folders");
-      t.ok(checkLog(ct.logOutput, "  Skipping rename of sub to folder in folder"), "Logs conflict skipping for folders");
     }
     t.end();
   });
@@ -134,12 +142,49 @@ function defineReplaceTests(t, ct, config, verbose) {
 
 }
 
+function testRemote(t, verbose) {
+  const config = {
+    verbose: verbose,
+    template: 'sample/remote',
+    folder: './output/test-remote' + (verbose ? '-verbose' : ''),
+    tokens: [
+      {
+        pattern: /[\r\n]/g,
+        replacement: ""
+      }
+    ]
+  };
+
+  t.test("Test codetender new with remote templates", (t) => {
+    var ct = new CodeTender();
+
+    ct.new(config).then(function () {
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.plan(2);
+      t.test("Test remote configs", t => {
+        t.ok(checkContents(config.folder + '/EXAMPLE', 'three'), "root is processed");
+        t.ok(checkContents(config.folder + '/bar/EXAMPLE', 'bar'), "folder is processed");
+        t.ok(checkContents(config.folder + '/four/EXAMPLE', 'one'), "template with no tokens is cloned");
+        t.ok(checkLog(ct.logOutput, "Processing remote template in /"), "Logs root processing");
+        t.ok(checkLog(ct.logOutput, "Processing remote template in foo"), "Logs folder processing");
+        t.ok(checkNoLog(ct.logOutput, "Processing remote template in four"), "Does not log remote with no tokens");
+        t.end();
+      });
+      t.test("Test scripts", t => {
+        t.ok(checkContents(config.folder + '/before.txt', 'bar'), "before script works");
+        t.ok(checkContents(config.folder + '/after.txt', 'bar'), "after script works");
+        t.end();
+      });
+    });
+  }).catch(t.threw);
+}
+
 function testReplace(t, verbose) {
-  var template = 'sample',
+  var template = 'sample/local',
     config = {
       verbose: verbose,
       folder: './output/test-replace' + (verbose ? '-verbose' : ''),
-      file: 'sample/codetender.json',
+      file: 'sample/local/codetender.json',
       tokens: [
         {
           pattern: 'CodeTender',
@@ -196,7 +241,7 @@ function testInvalidGit(t, verbose) {
   };
 
   t.test("Test codetender new with invalid repo", (t) => {
-    
+
     let ct = new CodeTender();
 
     t.plan(2);
@@ -207,8 +252,33 @@ function testInvalidGit(t, verbose) {
   }).catch(t.threw);
 }
 
+function testInvalidRemoteConfig(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-invalid-remote-config' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/invalid-remote-config.json'
+  };
+
+  t.test("Test codetender new with invalid remote config", (t) => {
+
+    let ct = new CodeTender();
+
+    t.plan(2);
+    t.teardown((err) => { cleanup(config.folder, err) });
+    t.rejects(ct.new(config), "Invalid remote config throws error").then(function () {
+      t.ok(checkLog(ct.logOutput, "Configuration Error: Remote destinations must be one level down from the root."), "Invalid remote config logs appropriate message");
+    });
+  }).catch(t.threw);
+}
+
 testNew(t, false);
 
 testReplace(t, true);
 
 testInvalidGit(t, false);
+
+testRemote(t, false);
+
+testInvalidRemoteConfig(t, false);
