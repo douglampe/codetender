@@ -275,6 +275,9 @@ function CodeTender() {
         me.config.remote.forEach((i) => {
           tasks.push(() => { return gitClone(i.src, i.dest === "/" ? me.config.targetPath : path.join(me.config.targetPath, i.dest)); })
         });
+        tasks.push(() => {
+          copyFromFs(me.config.tempPath, me.config.targetPath);
+        });
         return runTasks(tasks);
       });
     }
@@ -496,7 +499,6 @@ function CodeTender() {
       verboseLog("Running before script...");
 
       return runChildProcess(me.config.scripts.before);
-      // return runChildProcess(path.join(me.config.tempPath, me.config.scripts.before), me.config.targetPath);
     }
     else {
       return Promise.resolve();
@@ -859,7 +861,6 @@ function CodeTender() {
       verboseLog("Running after script...");
 
       return runChildProcess(me.config.scripts.after);
-      // return runChildProcess(path.combine(me.config.tempPath, me.config.scripts.after), me.config.targetPath);
     }
     else {
       return Promise.resolve();

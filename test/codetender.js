@@ -160,14 +160,19 @@ function testRemote(t, verbose) {
 
     ct.new(config).then(function () {
       t.teardown((err) => { cleanup(config.folder, err) });
-      t.plan(1);
-      t.test("Test remote configs", (t) => {
+      t.plan(2);
+      t.test("Test remote configs", t => {
         t.ok(checkContents(config.folder + '/EXAMPLE', 'three'), "root is processed");
         t.ok(checkContents(config.folder + '/bar/EXAMPLE', 'bar'), "folder is processed");
         t.ok(checkContents(config.folder + '/four/EXAMPLE', 'one'), "template with no tokens is cloned");
         t.ok(checkLog(ct.logOutput, "Processing remote template in /"), "Logs root processing");
         t.ok(checkLog(ct.logOutput, "Processing remote template in foo"), "Logs folder processing");
         t.ok(checkNoLog(ct.logOutput, "Processing remote template in four"), "Does not log remote with no tokens");
+        t.end();
+      });
+      t.test("Test scripts", t => {
+        t.ok(checkContents(config.folder + '/before.txt', 'bar'), "before script works");
+        t.ok(checkContents(config.folder + '/after.txt', 'bar'), "after script works");
         t.end();
       });
     });

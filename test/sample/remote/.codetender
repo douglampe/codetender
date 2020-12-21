@@ -34,5 +34,9 @@
       "pattern": "two",
       "replacement": "three"
     }
-  ]
+  ],
+    "scripts": {
+    "before": "node ./codetender-before.js",
+    "after": "node ./codetender-after.js"
+  }
 }
