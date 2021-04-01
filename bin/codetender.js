@@ -8,7 +8,8 @@ var fs = require('graceful-fs'),
   glob = require('glob'),
   rimraf = require('rimraf'),
   exec = require('child_process').exec,
-  replaceInFile = require('replace-in-file');
+  replaceInFile = require('replace-in-file'),
+  semver = require('semver');
 
 const tempPath = "../__CODETENDER_TEMP";
 
@@ -21,7 +22,7 @@ function CodeTender() {
   me.replace = replace;
   me.logOutput = [];
   me.tokenMap = {};
-
+  me.codeVersionSpec = "1.0";
 
   /**
    * Copies a template defined by config.template to a folder defined by config.folder
@@ -182,6 +183,14 @@ function CodeTender() {
         me.config.configPaths.push(file);
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens;
+
+        // Check config version
+        if (!fileConfig.version) {
+          log("Warning: no version specified in " + file);
+        }
+        else if (!semver.satisfies(fileConfig.version, me.configVersionSpec)) {
+          oops("This version of codetender requires configuration version " + me.codeVersionSpec + ".")
+        }
 
         // Merge tokens
         if (fileConfig.tokens) {
