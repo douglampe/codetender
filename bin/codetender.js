@@ -117,7 +117,11 @@ function CodeTender() {
         scripts: {},
         banner: [],
         configPaths: [null],
-        errors: []
+        errors: [],
+        readerFactory: () => { return readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        }); }
       },
       config
     );
@@ -395,9 +399,11 @@ function CodeTender() {
     log("");
 
     me.config.tokens.forEach(function (token) {
-      prompts.push(function () {
-        return getTokenFromPrompt(token);
-      });
+      if (token.prompt) {
+        prompts.push(function () {
+          return getTokenFromPrompt(token);
+        });
+      }
     });
 
     runTasks(prompts).then(deferred.resolve).catch(deferred.reject);
@@ -431,10 +437,7 @@ function CodeTender() {
    */
   function ask(prompt) {
     var deferred = q.defer(),
-      rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
+      rl = me.config.readerFactory();
 
     rl.question(prompt, function (response) {
       deferred.resolve(response);
