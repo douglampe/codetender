@@ -65,6 +65,26 @@ function cleanup(folder, err) {
   });
 }
 
+function testReaderFactory(map) {
+  return () => {
+    return {
+      question: (prompt, f) => {
+        console.log("Prompt: " + prompt);
+        if (prompt in map) {
+          var response = map[prompt];
+          console.log("Response: " + response);
+          f(response);
+        }
+        else {
+          console.log("Prompt '" + prompt + "' not found in map:");
+          console.log(JSON.stringify(map));
+        }
+      },
+      close: () => { return; }
+    };
+  }
+}
+
 function testNew(t, verbose) {
   const config = {
     verbose: verbose,
@@ -272,6 +292,33 @@ function testInvalidRemoteConfig(t, verbose) {
     });
   }).catch(t.threw);
 }
+
+function testCli(t, verbose) {
+  // Pad prompt with leading spaces due to formatting:
+  const map = {"  some-prompt": "some-value" };
+
+  const config = {
+    template: 'sample/cli',
+    folder: './output/test-cli' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    readerFactory: testReaderFactory(map)
+  }
+
+  t.test("Test codetender CLI", (t) => {
+    var ct = new CodeTender();
+
+    ct.new(config).then(function () {
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.plan(1);
+      t.test("Test .codetender config replacements", (t) => {
+        t.ok(checkContents(config.folder + '/test.txt', 'some-value-baz'), "Prompt and replacements both work");
+        t.end();
+      });
+    });
+  }).catch(t.threw);
+}
+
+testCli(t, false);
 
 testNew(t, false);
 

@@ -1,0 +1,12 @@
+{
+  "tokens": [
+    {
+      "pattern": "foo",
+      "prompt": "some-prompt"
+    },
+    {
+      "pattern": "bar",
+      "replacement": "baz"
+    }
+  ]
+}
