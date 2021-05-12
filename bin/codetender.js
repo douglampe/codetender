@@ -22,7 +22,7 @@ function CodeTender() {
   me.replace = replace;
   me.logOutput = [];
   me.tokenMap = {};
-  me.codeVersionSpec = "1.0";
+  me.schemaVersion = "1.0.0";
 
   /**
    * Copies a template defined by config.template to a folder defined by config.folder
@@ -170,7 +170,8 @@ function CodeTender() {
    */
   function readConfig(file, checkFile) {
     var deferred = q.defer(),
-      fileConfig;
+      fileConfig,
+      fileVersion;
 
     fs.readFile(file, { encoding: "utf-8" }, function (err, data) {
       if (err) {
@@ -192,8 +193,20 @@ function CodeTender() {
         if (!fileConfig.version) {
           log("Warning: no version specified in " + file);
         }
-        else if (!semver.satisfies(fileConfig.version, me.configVersionSpec)) {
-          oops("This version of codetender requires configuration version " + me.codeVersionSpec + ".")
+        else {
+          fileVersion = semver.coerce(fileConfig.version);
+          codeVersion = semver.parse(me.schemaVersion);
+          if (codeVersion.major != fileVersion.major) {
+            deferred.reject("This version of codetender requires configuration schema version " + codeVersion.version + ".");
+          }
+          else if (semver.gt(fileVersion, codeVersion)) {
+            log("Warning: This template requires a newer version of the codetender configuration schema (" + fileConfig.version + "). Some features may not be supported.");
+          }
+          else if (semver.lt(fileVersion, codeVersion)) {
+            log("Warning: This template specifies an older version of the codetender configuration schema (" + fileConfig.version + "). Some features may not be supported.");
+          }
+          verboseLog("File version: " + fileVersion);
+          verboseLog("Code version: " + codeVersion);
         }
 
         // Merge tokens

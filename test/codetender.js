@@ -293,6 +293,91 @@ function testInvalidRemoteConfig(t, verbose) {
   }).catch(t.threw);
 }
 
+function testInvalidVersion(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-invalid-version' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/invalid-version.json'
+  };
+
+  t.test("Test .codetender new with invalid version", (t) => {
+
+    let ct = new CodeTender();
+    ct.schemaVersion = "2.0.0";
+
+    t.plan(2);
+    t.teardown((err) => { cleanup(config.folder, err) });
+    t.rejects(ct.new(config), "Invalid config version throws error").then(function () {
+      t.ok(checkLog(ct.logOutput, "This version of codetender requires configuration schema version 2.0.0."), "Invalid config version logs appropriate message");
+    });
+  }).catch(t.threw);
+}
+
+function testNewerMinorVersion(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-newer-minor-version' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/invalid-minor-version.json'
+  };
+
+  t.test("Test .codetender new with newer minor version", (t) => {
+
+    let ct = new CodeTender();
+    
+    ct.new(config).then(function () {
+      t.plan(1);
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.ok(checkLog(ct.logOutput, "Warning: This template requires a newer version of the codetender configuration schema (1.1). Some features may not be supported."), "Newer minor config version logs appropriate message");
+    });
+  }).catch(t.threw);
+}
+
+function testOlderMinorVersion(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-older-minor-version' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/invalid-minor-version.json'
+  };
+
+  t.test("Test .codetender new with older minor version", (t) => {
+
+    let ct = new CodeTender();
+    ct.schemaVersion = "1.2.0";
+    
+    ct.new(config).then(function () {
+      t.plan(1);
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.ok(checkLog(ct.logOutput, "Warning: This template specifies an older version of the codetender configuration schema (1.1). Some features may not be supported."), "Older minor config version logs appropriate message");
+    });
+  }).catch(t.threw);
+}
+function testNoVersion(t, verbose) {
+
+  const config = {
+    template: 'sample/config',
+    folder: './output/test-no-version' + (verbose ? '-verbose' : ''),
+    verbose: verbose,
+    file: 'sample/config/no-version.json'
+  };
+
+  t.test("Test .codetender new with no version", (t) => {
+
+    let ct = new CodeTender();
+    
+    ct.new(config).then(function () {
+      t.plan(1);
+      t.teardown((err) => { cleanup(config.folder, err) });
+      t.ok(checkLog(ct.logOutput, "Warning: no version specified in"), "Invalid minor config version logs appropriate message");
+    });
+}).catch(t.threw);
+}
+
 function testCli(t, verbose) {
   // Pad prompt with leading spaces due to formatting:
   const map = {"  some-prompt": "some-value" };
@@ -318,11 +403,19 @@ function testCli(t, verbose) {
   }).catch(t.threw);
 }
 
+testNoVersion(t, false);
+
+testInvalidVersion(t, false);
+
+testNewerMinorVersion(t, false);
+
+testOlderMinorVersion(t, false);
+
 testCli(t, false);
 
 testNew(t, false);
 
-testReplace(t, true);
+testReplace(t, false);
 
 testInvalidGit(t, false);
 
