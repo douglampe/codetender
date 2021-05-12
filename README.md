@@ -69,6 +69,7 @@ The format of the JSON configuration is shown below:
 
 ```
 {
+  "version": "1.0",
   "tokens": [
     {
       "pattern": "pattern to find",
@@ -104,6 +105,13 @@ The format of the JSON configuration is shown below:
   ]
 }
 ```
+
+### Config Schema Version
+Future versions of CodeTender might introduce breaking changes to the config schema. In order to maintain compatibility
+with templates, a template can specify a version number. This version number supports semver versioning patterns. As 
+long as the major version number matches the CodeTender supported schema version number, the configuration will process
+without any errors but will display a warning if there is a minor version number mismatch. If the major version does
+not match, an error will be displayed.
 
 ### Tokens
 

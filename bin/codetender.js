@@ -8,7 +8,8 @@ var fs = require('graceful-fs'),
   glob = require('glob'),
   rimraf = require('rimraf'),
   exec = require('child_process').exec,
-  replaceInFile = require('replace-in-file');
+  replaceInFile = require('replace-in-file'),
+  semver = require('semver');
 
 const tempPath = "../__CODETENDER_TEMP";
 
@@ -21,7 +22,7 @@ function CodeTender() {
   me.replace = replace;
   me.logOutput = [];
   me.tokenMap = {};
-
+  me.schemaVersion = "1.0.0";
 
   /**
    * Copies a template defined by config.template to a folder defined by config.folder
@@ -169,7 +170,8 @@ function CodeTender() {
    */
   function readConfig(file, checkFile) {
     var deferred = q.defer(),
-      fileConfig;
+      fileConfig,
+      fileVersion;
 
     fs.readFile(file, { encoding: "utf-8" }, function (err, data) {
       if (err) {
@@ -186,6 +188,26 @@ function CodeTender() {
         me.config.configPaths.push(file);
         fileConfig = JSON.parse(data);
         tokens = me.config.tokens;
+
+        // Check config version
+        if (!fileConfig.version) {
+          log("Warning: no version specified in " + file);
+        }
+        else {
+          fileVersion = semver.coerce(fileConfig.version);
+          codeVersion = semver.parse(me.schemaVersion);
+          if (codeVersion.major != fileVersion.major) {
+            deferred.reject("This version of codetender requires configuration schema version " + codeVersion.version + ".");
+          }
+          else if (semver.gt(fileVersion, codeVersion)) {
+            log("Warning: This template requires a newer version of the codetender configuration schema (" + fileConfig.version + "). Some features may not be supported.");
+          }
+          else if (semver.lt(fileVersion, codeVersion)) {
+            log("Warning: This template specifies an older version of the codetender configuration schema (" + fileConfig.version + "). Some features may not be supported.");
+          }
+          verboseLog("File version: " + fileVersion);
+          verboseLog("Code version: " + codeVersion);
+        }
 
         // Merge tokens
         if (fileConfig.tokens) {

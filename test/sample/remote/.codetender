@@ -1,4 +1,5 @@
 {
+  "version": "1.0",
   "remote": [
     {
       "src": "https://github.com/rtyley/small-test-repo.git",
