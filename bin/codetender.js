@@ -22,7 +22,7 @@ function CodeTender() {
   me.replace = replace;
   me.logOutput = [];
   me.tokenMap = {};
-  me.schemaVersion = "1.0.0";
+  me.schemaVersion = "1.1.0";
 
   /**
    * Copies a template defined by config.template to a folder defined by config.folder
@@ -118,6 +118,7 @@ function CodeTender() {
         banner: [],
         configPaths: [null],
         errors: [],
+        variables: [],
         readerFactory: () => { return readline.createInterface({
           input: process.stdin,
           output: process.stdout
@@ -128,6 +129,9 @@ function CodeTender() {
 
     // Set target path
     me.config.targetPath = path.resolve(config.folder);
+
+    // Set target name
+    me.config.targetName = path.basename(me.config.targetPath);
 
     // Always ignore .git folder
     if (me.config.noReplace.indexOf('**/.git/') === -1) {
@@ -144,6 +148,12 @@ function CodeTender() {
     if (me.config.ignore.indexOf('.codetender') === -1) {
       me.config.ignore.push('.codetender');
     }
+
+    // Add root folder as variable
+    me.config.variables.push({
+      "name": "CODETENDER_ROOT",
+      "value": me.config.targetName
+    })
   }
 
   /**
@@ -207,6 +217,11 @@ function CodeTender() {
           }
           verboseLog("File version: " + fileVersion);
           verboseLog("Code version: " + codeVersion);
+        }
+
+        // Merge variables
+        if (fileConfig.variables) {
+          me.config.variables = me.config.variables.concat(fileConfig.variables);
         }
 
         // Merge tokens
@@ -477,6 +492,7 @@ function CodeTender() {
         files: [],
         count: 0
       };
+      replaceVariables(mapItem);
       me.tokenMap[mapItem.pattern] = mapItem;
     });
 
@@ -509,6 +525,18 @@ function CodeTender() {
     q.all(promises).then(deferred.resolve).catch(deferred.reject);
 
     return deferred.promise;
+  }
+
+  function replaceVariables(mapItem) {
+    me.config.variables.forEach(function (variable) {
+      mapItem.replacement = replaceVariable(mapItem.replacement, variable.name, variable.value);
+    })
+  }
+
+  function replaceVariable(text, name, value) {
+    var regex = new RegExp("\\$" + name, "g");
+    verboseLog("Looking for variable " + name + " in " + text + ":" + text.match(regex));
+    return text.replace(regex, value);
   }
 
   // Run the before script if it exists

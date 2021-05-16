@@ -12,7 +12,7 @@ local folder can be a template. Just replace any text token in all file names an
 ## Usage
 
 ```
-Usage: codetender-cli [options] [command]
+Usage: codetender [options] [command]
 
 Options:
   -v, --version            Display current version number
@@ -69,7 +69,13 @@ The format of the JSON configuration is shown below:
 
 ```
 {
-  "version": "1.0",
+  "version": "1.1",
+  "variables": [
+    {
+      "name": "VARIABLE_NAME",
+      "value" "some-value"
+    }
+  ]
   "tokens": [
     {
       "pattern": "pattern to find",
@@ -78,6 +84,10 @@ The format of the JSON configuration is shown below:
     {
       "pattern": "pattern to find",
       "replacement": "value to replace pattern with"
+    },
+    {
+      "pattern": "pattern to find",
+      "replacement": "$VARIABLE_NAME variable replacement"
     }
   ],
   "ignore": [
@@ -113,6 +123,23 @@ long as the major version number matches the CodeTender supported schema version
 without any errors but will display a warning if there is a minor version number mismatch. If the major version does
 not match, an error will be displayed.
 
+### Variables
+
+The `variables` config allows the template developer to specify values to be used in replacements. CodeTender 
+automatically creates a value for the target leaf folder name named `CODETENDER_ROOT`. So for example if the target
+folder is `sample/some-folder` then the value of `CODETENDER_ROOT` will be set to `some-folder`.
+
+In the example below, a variable named `TEST_VARIABLE` has a value of `some-value`.
+
+```
+"variables": [
+    {
+      "name": "VARIABLE_NAME",
+      "value" "some-value"
+    }
+  ]
+```
+
 ### Tokens
 
 The `tokens` config allows the template developer to specify (and therefore limit) the tokens to be replaced within the
@@ -134,10 +161,17 @@ renaming, you must add the `overwrite` flag to both `foo` and `bar` tokens to re
 In the example below, the user would first be prompted: `Enter the name of you project (ex: MyProject):`. Then they 
 would be prompted: `Replace all instances of 'MyFunction' with:`. All instances of `text to always replace` will be
 replaced with `replacement value`. `README.codetender.md` will be renamed `README.md` after deleting the original
-`README.md`.
+`README.md`. All instances of `text to replace with variable` will be replaced with `variable value` and 
+`project-name` will be replaced with the leaf target folder name.
 
 
 ```
+  "variables": [
+    {
+      "name": "VARIABLE_NAME",
+      "value": "variable value"
+    }
+  ]
   "tokens": [
     {
       "pattern": "MyApplication",
@@ -154,6 +188,14 @@ replaced with `replacement value`. `README.codetender.md` will be renamed `READM
       "pattern": "README.codetender.md",
       "replacement": "README.md",
       "overwrite": true
+    },
+    {
+      "pattern": "text to replace with variable",
+      "replacement": "$VARIABLE_NAME"
+    },
+    {
+      "pattern": "project-name",
+      "replacement": "$CODETENDER_ROOT"
     }
   ]
 ```

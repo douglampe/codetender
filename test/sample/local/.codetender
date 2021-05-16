@@ -1,5 +1,11 @@
 {
-  "version": "1.0",
+  "version": "1.1",
+  "variables": [
+    {
+      "name": "TEST_VARIABLE",
+      "value": "folder"
+    }
+  ],
   "tokens": [
     {
       "pattern": "CodeTender",
@@ -11,7 +17,15 @@
     },
     {
       "pattern": "sub",
-      "replacement": "folder"
+      "replacement": "$TEST_VARIABLE"
+    },
+    {
+      "pattern": "test-root-folder",
+      "replacement": "$CODETENDER_ROOT"
+    },
+    {
+      "pattern": "test-root-extended",
+      "replacement": "$CODETENDER_ROOT-something-else"
     }
   ],
   "ignore": [
