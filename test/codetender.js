@@ -104,6 +104,8 @@ function testNew(t, verbose) {
         t.notOk(checkFile(config.folder + '/codetender-before.js'), "codetender-before is removed");
         t.notOk(checkFile(config.folder + '/codetender-after.js'), "codetender-after is removed");
         t.ok(checkLog(ct.logOutput, "This is a test. If this were a real template, there would be some useful info here."), "Banner appears only once");
+        t.ok(checkContents(config.folder + '/' + ct.config.targetName + '.txt', ct.config.targetName), 'root folder is a variable')
+        t.ok(checkContents(config.folder + '/' + ct.config.targetName + '-something-else.txt', ct.config.targetName + '-something-else'), 'root folder is a variable')
         t.end();
       });
       t.test("Test ignore config", (t) => {
@@ -327,6 +329,7 @@ function testNewerMinorVersion(t, verbose) {
   t.test("Test .codetender new with newer minor version", (t) => {
 
     let ct = new CodeTender();
+    ct.schemaVersion = "1.0.0";
     
     ct.new(config).then(function () {
       t.plan(1);
