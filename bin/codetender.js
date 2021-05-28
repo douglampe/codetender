@@ -11,7 +11,8 @@ var fs = require('graceful-fs'),
   replaceInFile = require('replace-in-file'),
   semver = require('semver');
 
-const tempPath = "../__CODETENDER_TEMP";
+  TEMPLATE_ROOT = "__CT_TEMPLATE_ROOT__"
+  REMOTE_ROOT = "__CT_REMOTE_ROOT__"
 
 module.exports = CodeTender;
 
@@ -43,6 +44,7 @@ function CodeTender() {
     splash("Serving up code...");
 
     runTasks([
+      createTempFolder,
       copyOrClone,
       logCloneSuccess,
       readTemplateConfig,
@@ -56,11 +58,14 @@ function CodeTender() {
       renameAllFiles,
       runAfterScript,
       cleanUpDelete,
+      copyFromTemp,
       logTokenSuccess,
       banner
     ]).then(deferred.resolve).catch(function (err) {
       oops(err, true);
       deferred.reject();
+    }).finally(() => {
+      deleteTemp().then(deferred.resolve).catch(deferred.reject);
     });
 
     return deferred.promise;
@@ -74,6 +79,8 @@ function CodeTender() {
     var deferred = q.defer();
 
     initConfig(config);
+
+    me.processPath = me.config.targetPath;
 
     if (!fs.existsSync(me.config.targetPath)) {
       log('Folder ' + me.config.folder + ' does not exist. Please specify a valid folder or use "codetender new" to copy and process a template.');
@@ -160,7 +167,7 @@ function CodeTender() {
    * Read configuration from the .codetender file from the root folder of the template.
    */
   function readTemplateConfig() {
-    return readConfig(path.join(me.config.targetPath, ".codetender"));
+    return readConfig(path.join(me.templatePath, ".codetender"));
   }
 
   /**
@@ -290,40 +297,24 @@ function CodeTender() {
     const tasks = [];
 
     if (me.config.remote.length > 0) {
-      log("Remote templates found.")
+      verboseLog("Remote templates found.")
 
       let rootTemplates = me.config.remote.find(r => r.dest === "/");
 
       if (rootTemplates.length > 1) {
         return q.reject("More than one remote root template was specified. Aborting.");
       }
-
-
-      if (rootTemplates.length == 0) {
-        me.config.tempPath = me.config.targetPath;
-      }
-      else {
-        me.config.tempPath = path.resolve(me.config.targetPath, tempPath);
-        if (fs.existsSync(me.config.tempPath)) {
-          return q.reject("Temporary folder " + me.config.tempPath + " already exists. Please delete temporary folder and try again.");
+      
+      me.config.remote.forEach((i) => {
+        if (i.dest === "/") {
+          me.remoteRoot = path.join(me.processPath, REMOTE_ROOT);
+          tasks.push(() => { return gitClone(i.src, me.remoteRoot); })
+        } else {
+          tasks.push(() => { return gitClone(i.src, path.join(me.templatePath, i.dest)); })
         }
-        me.config.delete.push(tempPath);
-        verboseLog("Renaming initial template folder to temporary folder:");
-        verboseLog("  " + me.config.targetPath + " -> " + me.config.tempPath);
-      }
-
-      return deferredRename(me.config.targetPath, me.config.tempPath).then(() => {
-        me.config.remote.forEach((i) => {
-          tasks.push(() => { return gitClone(i.src, i.dest === "/" ? me.config.targetPath : path.join(me.config.targetPath, i.dest)); })
-        });
-        tasks.push(() => {
-          copyFromFs(me.config.tempPath, me.config.targetPath);
-        });
-        return runTasks(tasks);
       });
-    }
-    else {
-      return q.resolve();
+
+      return runTasks(tasks);
     }
   }
 
@@ -340,7 +331,7 @@ function CodeTender() {
           log("");
           log("Processing remote template in " + r.dest)
           return ct.replace({
-            folder: path.join(me.config.folder, r.dest),
+            folder: r.dest === "/" ? me.remoteRoot : path.join(me.templatePath, r.dest),
             tokens: r.tokens,
             noReplace: me.config.remote.filter(r2 => r.dest === "/" && r2.dest != "/").map(r2 => r2.dest + "/"),
             verbose: me.config.verbose,
@@ -350,6 +341,11 @@ function CodeTender() {
         });
       }
     });
+
+    if (me.remoteRoot) {
+      tasks.push(() => { return copyFromFs(me.remoteRoot, me.processPath); });
+      tasks.push(() => { return deferredRemove(me.remoteRoot); });
+    }
 
     return runTasks(tasks);
   }
@@ -503,16 +499,17 @@ function CodeTender() {
 
       me.config.noReplace.forEach(function (pattern) {
         let d = q.defer();
-        glob(pattern, { cwd: me.config.targetPath }, function (err, matches) {
+        verboseLog("  Checking pattern " + pattern);
+        glob(pattern, { cwd: me.processPath }, function (err, matches) {
           if (err) {
             d.reject(err);
           }
           else {
             if (matches) {
               matches.forEach(function (match) {
-                skipPath = path.resolve(me.config.targetPath, match);
+                skipPath = path.resolve(me.processPath, match);
                 me.config.notReplacedFiles[skipPath] = true;
-                verboseLog("  Skip path: " + skipPath);
+                verboseLog("  Match (" + pattern + ")...Skip path: " + skipPath);
               });
             }
             d.resolve();
@@ -545,7 +542,7 @@ function CodeTender() {
 
       verboseLog("Running before script...");
 
-      return runChildProcess(me.config.scripts.before);
+      return runChildProcess(me.config.scripts.before, me.templatePath);
     }
     else {
       return Promise.resolve();
@@ -557,10 +554,10 @@ function CodeTender() {
    */
   function copyOrClone() {
     var template = me.config.template,
-      folder = me.config.targetPath;
+      folder = me.templatePath;
 
     if (fs.existsSync(template)) {
-      log('Cloning from template ' + template + ' into folder ' + folder);
+      log('Cloning from template ' + template + ' into temporary folder ' + folder);
 
       me.config.isLocalTemplate = true;
       return copyFromFs(template, folder);
@@ -608,10 +605,27 @@ function CodeTender() {
   function gitClone(repo, folder) {
     var deferred = q.defer();
 
-    log("Cloning from repo: " + repo + " into folder " + folder);
+    log("Cloning from repo: " + repo + " into temporary folder " + folder);
     runChildProcess("git clone " + repo + " " + folder, ".").then(function () {
       deferred.resolve();
     }).catch(deferred.reject);
+
+    return deferred.promise;
+  }
+
+  function createTempFolder() {
+    var deferred = q.defer();
+
+    fs.mkdtemp(me.config.targetPath, function(err, folder) {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        me.tempPath = folder;
+        me.templatePath = path.join(me.tempPath, TEMPLATE_ROOT);
+        me.processPath = me.templatePath;
+        deferred.resolve();
+      }
+    });
 
     return deferred.promise;
   }
@@ -631,7 +645,7 @@ function CodeTender() {
       promises = [];
 
     if (!patterns || patterns.length < 1) {
-      verboseLog("No files or folders matching " + key + " config.");
+      verboseLog("No patterns defined for " + key + " config.");
       deferred.resolve();
     }
     else {
@@ -639,9 +653,9 @@ function CodeTender() {
       patterns.forEach(function (pattern) {
         var d = q.defer();
 
-        verboseLog("  Removing: " + pattern);
+        verboseLog("  Removing: " + path.join(me.processPath, pattern));
 
-        rimraf(path.join(me.config.targetPath, pattern), function (err) {
+        rimraf(path.join(me.processPath, pattern), function (err) {
           if (err) {
             d.reject(err);
           }
@@ -680,7 +694,7 @@ function CodeTender() {
   function renameAllFiles() {
     log("");
     log("Renaming files and replacing tokens where found...");
-    return processFolder(me.config.targetPath);
+    return processFolder(me.processPath);
   }
 
   /**
@@ -902,12 +916,26 @@ function CodeTender() {
     return deferred.promise;
   }
 
+  // Wrap remove to return a promise
+  function deferredRemove(path) {
+    const deferred = q.defer();
+
+    rimraf(path, err => {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        deferred.resolve();
+      }
+    });
+    return deferred.promise;
+  }
+
   // Run the after script if present
   function runAfterScript() {
     if (me.config.scripts && me.config.scripts.after) {
       verboseLog("Running after script...");
 
-      return runChildProcess(me.config.scripts.after);
+      return runChildProcess(me.config.scripts.after, me.templatePath);
     }
     else {
       return Promise.resolve();
@@ -920,7 +948,7 @@ function CodeTender() {
 
     verboseLog("  Running command: " + command);
 
-    exec(command, { cwd: cwd || me.config.targetPath }, function (err, stdout, stderr) {
+    exec(command, { cwd: cwd || me.processPath }, function (err, stdout, stderr) {
       if (err) {
         deferred.reject(stderr);
       }
@@ -981,6 +1009,33 @@ function CodeTender() {
     }
 
     return Promise.resolve();
+  }
+
+  function copyFromTemp() {
+    var tasks = [];
+
+    verboseLog("Copying from temporary folder " + me.tempPath + " to target folder " + me.config.targetPath);
+
+    tasks.push(() => { return copyFromFs(me.templatePath, me.config.targetPath); });
+    tasks.push(() => { return deferredRemove(me.templatePath); });
+
+    return runTasks(tasks);
+  }
+
+  function deleteTemp() {
+    var deferred = q.defer();
+
+    verboseLog("Cleaning up temporary folder " + me.tempPath);
+
+    rimraf(me.tempPath, (err) => {
+      if (err) {
+        deferred.reject(err);
+      } else {
+        deferred.resolve();
+      }
+    });
+
+    return deferred.promise;
   }
 
   // Run a series of promises in sync
