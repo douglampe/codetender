@@ -20,6 +20,7 @@ function CodeTender() {
   var me = this;
 
   me.new = newFromTemplate;
+  me.add = add;
   me.replace = replace;
   me.logOutput = [];
   me.tokenMap = {};
@@ -37,6 +38,52 @@ function CodeTender() {
 
     if (fs.existsSync(me.config.targetPath)) {
       log('Folder ' + me.config.folder + ' already exists. Please specify a valid name for a new folder or use "codetender replace" to replace tokens in existing files.');
+      deferred.reject();
+      return deferred.promise;
+    }
+
+    splash("Serving up code...");
+
+    runTasks([
+      createTempFolder,
+      copyOrClone,
+      logCloneSuccess,
+      readTemplateConfig,
+      readFileConfig,
+      cloneRemoteTemplates,
+      processRemoteTemplates,
+      cleanupIgnored,
+      getTokens,
+      prepTokens,
+      runBeforeScript,
+      renameAllFiles,
+      runAfterScript,
+      cleanUpDelete,
+      copyFromTemp,
+      logTokenSuccess,
+      banner
+    ]).then(deferred.resolve).catch(function (err) {
+      oops(err, true);
+      deferred.reject();
+    }).finally(() => {
+      deleteTemp().then(deferred.resolve).catch(deferred.reject);
+    });
+
+    return deferred.promise;
+  }
+
+  /**
+   * Copies a template defined by config.template to an existing folder defined by config.folder
+   * and replaced tokens as specified by either the command line or configuration.
+   * @param {object} config 
+   */
+   function add(config) {
+    var deferred = q.defer();
+
+    initConfig(config);
+
+    if (!fs.existsSync(me.config.targetPath)) {
+      log('Folder ' + me.config.folder + ' does not exist. Please specify a valid name for an existing folder or use "codetender new" to create a folder from a template.');
       deferred.reject();
       return deferred.promise;
     }
@@ -139,6 +186,9 @@ function CodeTender() {
 
     // Set target name
     me.config.targetName = path.basename(me.config.targetPath);
+
+    // Set overwrite
+    me.config.overwrite = config.overwrite;
 
     // Always ignore .git folder
     if (me.config.noReplace.indexOf('**/.git/') === -1) {
@@ -584,7 +634,7 @@ function CodeTender() {
     mkdirp(to).then(function () {
       // Copy from source to destination:
       verboseLog("  Copying from: " + from);
-      fsExtra.copy(from, to, {}, function (err) {
+      fsExtra.copy(from, to, { overwrite: me.config.overwrite }, function (err) {
         if (err) {
           deferred.reject(err);
         }
