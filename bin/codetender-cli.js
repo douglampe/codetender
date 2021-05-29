@@ -16,8 +16,14 @@ async function main() {
 
   program
     .command('new <template> <folder>')
-    .description('Copies contents of template to new folder then prompts for token replacement')
+    .description('Copies contents of template to new folder then prompts for token replacement as needed')
     .action(handleNew);
+
+  program
+    .command('add <template> <folder>')
+    .option('-o, --overwrite', 'Overwrite existing files with template contents')
+    .description('Copies contents of template to an existing folder then prompts for token replacement as needed')
+    .action(handleAdd);
 
   program
     .command('replace <folder>')
@@ -58,6 +64,40 @@ function handleNew(template, folder, options) {
   };
 
   new CodeTender().new(config).then(process.exit);
+}
+
+/**
+ * Parses arguments and makes sure destination folder does not exist
+ * @param {string} template Path to template (local folder or git repository)
+ * @param {string} folder Destination folder
+ * @param {Object} options Options
+ */
+ function handleAdd(template, folder, options) {
+
+  // Get options from root command for CLI
+  while (options && options.parent) {
+    options = options.parent;
+  }
+
+  if (options && options.verbose) {
+
+    console.log('Debug output enabled.');
+    console.log("Command Line Arguments:")
+    console.log("  Template: " + template);
+    console.log("  Folder: " + folder);
+    console.log("  Debug: true");
+  }
+
+  const config = {
+    template: template,
+    folder: folder,
+    verbose: options ? options.debug : false,
+    quiet: options ? options.quiet : false,
+    file: options ? options.file : null,
+    overwrite: options ? options.overwrite : false
+  };
+
+  new CodeTender().add(config).then(process.exit);
 }
 
 /**

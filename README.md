@@ -15,16 +15,20 @@ local folder can be a template. Just replace any text token in all file names an
 Usage: codetender [options] [command]
 
 Options:
-  -v, --version            Display current version number
-  -d, --debug              Display debugging output
-  -q, --quiet              Do not output to console (overrides --debug)
-  -f, --file <file>        Replace tokens as specified in a file
-  -h, --help               display help for command
+  -v, --version                      Display current version number
+  -d, --debug                        Display debugging output
+  -q, --quiet                        Do not output to console (overrides --debug)
+  -f, --file <file>                  Replace tokens as specified in a file
+  -h, --help                         display help for command
 
 Commands:
-  new <template> <folder>  Copies contents of template to new folder then prompts for token replacement
-  replace <folder>         Prompts for token replacement and replaces tokens
-  help [command]           display help for command
+  new <template> <folder>            Copies contents of template to new folder then prompts for token replacement as needed
+  add [options] <template> <folder>  Copies contents of template to an existing folder then prompts for token replacement as needed
+    Options:
+      -o, --overwrite  Overwrite existing files with template contents
+  
+  replace <folder>                   Prompts for token replacement and replaces tokens
+  help [command]                     display help for command
 ```
 
 ### Create New Project From Template
@@ -44,6 +48,21 @@ text which will replace placeholders in the template. If no configuration file e
 token to replace and the replacement text. CodeTender will then create a folder and copy the files into the folder. If
 the files come from a git repository, the `.git` folder will be deleted to disconnect it from the original remote 
 branch. Finally, CodeTender will replace all of the tokens as specified in file names, folder names, and file content.
+
+### Add Template Content to Existing Folder
+
+    codetender add user/repository existing_folder_name
+
+OR
+
+    codetender add https://repository.url.git existing_folder_name
+
+OR
+
+    codetender add ../relative/path/to/folder existing_folder_name
+
+Similar to `codetender new`, but adds content to an existing folder. Optionally, overwrite any existing content with
+`--overwrite` or `-o`.
 
 ### Rename Tokens in Existing Folder
 

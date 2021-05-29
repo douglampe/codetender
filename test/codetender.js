@@ -1,4 +1,6 @@
+const { parseOptions } = require('commander');
 var t = require('tap'),
+  q = require('q'),
   fs = require('fs'),
   rimraf = require('rimraf'),
   fsExtra = require('fs-extra'),
@@ -28,6 +30,21 @@ function checkDir(file) {
   var stat = fs.statSync(path.join(__dirname, file));
 
   return stat && stat.isDirectory();
+}
+
+function deferredRead(file) {
+  var deferred = q.defer();
+
+  fs.readFile(file, { encoding: 'utf8' }, (err, data) => {
+    if(err) {
+      deferred.reject(err);
+    }
+    else {
+      deferred.resolve(data);
+    }
+  });
+
+  return deferred.promise;
 }
 
 function checkContents(file, expected) {
@@ -100,23 +117,73 @@ function testNew(t, verbose) {
       t.teardown((err) => { cleanup(config.folder, err) });
       t.plan(8);
       defineReplaceTests(t, ct, config, verbose);
-      t.test("Test .codetender configs", (t) => {
-        t.notOk(checkFile(config.folder + '/codetender-before.js'), "codetender-before is removed");
-        t.notOk(checkFile(config.folder + '/codetender-after.js'), "codetender-after is removed");
-        t.ok(checkLog(ct.logOutput, "This is a test. If this were a real template, there would be some useful info here."), "Banner appears only once");
-        t.ok(checkContents(config.folder + '/' + ct.config.targetName + '.txt', ct.config.targetName), 'root folder is a variable')
-        t.ok(checkContents(config.folder + '/' + ct.config.targetName + '-something-else.txt', ct.config.targetName + '-something-else'), 'root folder is a variable')
-        t.end();
-      });
-      t.test("Test ignore config", (t) => {
-        t.notOk(checkDir(config.folder + '/ignored-folder'), "ignored folders are removed");
-        t.notOk(checkFile(config.folder + '/ignore-file.txt'), "ignored files are removed");
-        t.end();
-      });
-      t.test("Test scripts config", (t) => {
-        t.ok(checkContents(config.folder + '/before.txt', 'bar'), "before script works");
-        t.ok(checkContents(config.folder + '/after.txt', 'foo'), "after script works");
-        t.end();
+      defineNewTests(t, ct, config);
+    });
+  }).catch(t.threw);
+}
+
+function defineNewTests(t, ct, config) {
+  t.test("Test .codetender configs", (t) => {
+    t.notOk(checkFile(config.folder + '/codetender-before.js'), "codetender-before is removed");
+    t.notOk(checkFile(config.folder + '/codetender-after.js'), "codetender-after is removed");
+    t.ok(checkLog(ct.logOutput, "This is a test. If this were a real template, there would be some useful info here."), "Banner appears only once");
+    t.ok(checkContents(config.folder + '/' + ct.config.targetName + '.txt', ct.config.targetName), 'root folder is a variable')
+    t.ok(checkContents(config.folder + '/' + ct.config.targetName + '-something-else.txt', ct.config.targetName + '-something-else'), 'root folder is a variable')
+    t.end();
+  });
+  t.test("Test ignore config", (t) => {
+    t.notOk(checkDir(config.folder + '/ignored-folder'), "ignored folders are removed");
+    t.notOk(checkFile(config.folder + '/ignore-file.txt'), "ignored files are removed");
+    t.end();
+  });
+  t.test("Test scripts config", (t) => {
+    t.ok(checkContents(config.folder + '/before.txt', 'bar'), "before script works");
+    t.ok(checkContents(config.folder + '/after.txt', 'foo'), "after script works");
+    t.end();
+  });
+}
+
+function testAdd(t, overwrite, verbose) {
+  const config = {
+    verbose: verbose,
+    overwrite: overwrite,
+    template: 'sample/local',
+    folder: './output/test-add' + (verbose ? '-verbose' : '' + (overwrite ? '-overwrite' : '')),
+    file: 'sample/local/codetender.json'
+  };
+
+  t.test("Test codetender add", (t) => {
+
+    mkdirp(config.folder).then(function () {
+      // Copy from source to destination:
+      fsExtra.copy('sample/add', config.folder, function (err) {
+        if (err) {
+          t.threw(err);
+        }
+        else {
+          mkdirp(config.folder + '/.git').then(function (err) {
+            fs.writeFile(config.folder + '/.git/foo.txt', 'foo', function (err2) {
+              if (err2) {
+                cleanup(config.folder, err);
+              }
+              else {
+                let ct = new CodeTender();
+
+                ct.add(config).then(function () {
+                  t.teardown((err) => { cleanup(config.folder, err) });
+                  t.plan(5);
+                  t.resolveMatch(deferredRead(config.folder + '/still-here.txt'), "This existing file that does not match template should be unchanged so foo should still say foo.", "Existing files are unmodified.");
+                  if (config.overwrite) {
+                    t.ok(checkContents(config.folder + '/README.md', '# This is a sample Served template.'), "README.md is overwritten");
+                  } else {
+                    t.ok(checkContents(config.folder + '/README.md', 'This should be replaced with -o only.'), "README.md is not overwritten");
+                  }
+                  defineNewTests(t, ct, config);
+                }).catch(t.threw);
+              }
+            });
+          }).catch(t.threw);
+        }
       });
     });
   }).catch(t.threw);
@@ -417,6 +484,10 @@ testOlderMinorVersion(t, false);
 testCli(t, false);
 
 testNew(t, false);
+
+testAdd(t, false, false);
+
+testAdd(t, true, false);
 
 testReplace(t, false);
 
