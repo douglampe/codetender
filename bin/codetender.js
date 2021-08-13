@@ -666,16 +666,18 @@ function CodeTender() {
   function createTempFolder() {
     var deferred = q.defer();
 
-    fs.mkdtemp(me.config.targetPath, function(err, folder) {
-      if (err) {
-        deferred.reject(err);
-      } else {
-        me.tempPath = folder;
-        me.templatePath = path.join(me.tempPath, TEMPLATE_ROOT);
-        me.processPath = me.templatePath;
-        deferred.resolve();
-      }
-    });
+    mkdirp(me.config.targetPath).then(() => {
+      fs.mkdtemp(me.config.targetPath, function(err, folder) {
+        if (err) {
+          deferred.reject(err);
+        } else {
+          me.tempPath = folder;
+          me.templatePath = path.join(me.tempPath, TEMPLATE_ROOT);
+          me.processPath = me.templatePath;
+          deferred.resolve();
+        }
+      });
+    }).catch(deferred.reject);
 
     return deferred.promise;
   }
