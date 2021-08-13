@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { Command } = require('commander');
+const {Command} = require('commander');
 const program = new Command();
 const CodeTender = require('./codetender.js');
 const pkgInfo = require('../package.json');
@@ -27,7 +27,7 @@ async function main() {
 
   program
     .command('replace <folder>')
-    .description( 'Prompts for token replacement and replaces tokens')
+    .description('Prompts for token replacement and replaces tokens')
     .action(handleReplace);
 
   await program.parseAsync();
@@ -40,27 +40,25 @@ async function main() {
  * @param {Object} options Options
  */
 function handleNew(template, folder, options) {
-
   // Get options from root command for CLI
   while (options && options.parent) {
     options = options.parent;
   }
 
   if (options && options.verbose) {
-
     console.log('Debug output enabled.');
-    console.log("Command Line Arguments:")
-    console.log("  Template: " + template);
-    console.log("  Folder: " + folder);
-    console.log("  Debug: true");
+    console.log('Command Line Arguments:');
+    console.log('  Template: ' + template);
+    console.log('  Folder: ' + folder);
+    console.log('  Debug: true');
   }
 
   const config = {
-    template: template,
-    folder: folder,
+    template,
+    folder,
     verbose: options ? options.debug : false,
     quiet: options ? options.quiet : false,
-    file: options ? options.file : null
+    file: options ? options.file : null,
   };
 
   new CodeTender().new(config).then(process.exit);
@@ -72,29 +70,27 @@ function handleNew(template, folder, options) {
  * @param {string} folder Destination folder
  * @param {Object} options Options
  */
- function handleAdd(template, folder, options) {
-
+function handleAdd(template, folder, options) {
   // Get options from root command for CLI
   while (options && options.parent) {
     options = options.parent;
   }
 
   if (options && options.verbose) {
-
     console.log('Debug output enabled.');
-    console.log("Command Line Arguments:")
-    console.log("  Template: " + template);
-    console.log("  Folder: " + folder);
-    console.log("  Debug: true");
+    console.log('Command Line Arguments:');
+    console.log('  Template: ' + template);
+    console.log('  Folder: ' + folder);
+    console.log('  Debug: true');
   }
 
   const config = {
-    template: template,
-    folder: folder,
+    template,
+    folder,
     verbose: options ? options.debug : false,
     quiet: options ? options.quiet : false,
     file: options ? options.file : null,
-    overwrite: options ? options.overwrite : false
+    overwrite: options ? options.overwrite : false,
   };
 
   new CodeTender().add(config).then(process.exit);
@@ -106,7 +102,6 @@ function handleNew(template, folder, options) {
  * @param {Object} options Options
  */
 function handleReplace(folder, options) {
-
   // Get options from root command for CLI
   while (options && options.parent) {
     options = options.parent;
@@ -114,16 +109,16 @@ function handleReplace(folder, options) {
 
   if (options && options.debug && !options.quiet) {
     console.log('Debug mode enabled.');
-    console.log("Command Line Arguments:")
-    console.log("  Folder: " + folder);
-    console.log("  Debug: true");
+    console.log('Command Line Arguments:');
+    console.log('  Folder: ' + folder);
+    console.log('  Debug: true');
   }
 
   const config = {
-    folder: folder,
+    folder,
     verbose: options ? options.verbose : false,
     quiet: options ? options.quiet : false,
-    file: options ? options.file : null
+    file: options ? options.file : null,
   };
 
   new CodeTender().replace(config);
