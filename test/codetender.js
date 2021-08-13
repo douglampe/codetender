@@ -102,13 +102,27 @@ function makeGitFile(folder) {
 }
 
 async function lint() {
-  const eslint = new ESLint();
-  const formatter = await eslint.loadFormatter('stylish');
+  t.test('Lint', async t => {
+    const eslint = new ESLint();
+    const results = await eslint.lintFiles(['../bin/**/*.js', '../test/**/*.js']);
 
-  const results = await eslint.lintFiles(['../bin/**/*.js', '../test/**/*.js']);
-  const resultText = formatter.format(results);
-
-  console.log(resultText);
+    results.forEach(result => {
+      if (result.errorCount > 0) {
+        result.messages.forEach(message => {
+          if (message.severity === 2) {
+            t.fail(message.message, {
+              at: {
+                line: message.line,
+                column: message.column,
+                file: result.filePath,
+                type: message.ruleId,
+              },
+            });
+          }
+        });
+      }
+    });
+  });
 }
 
 function testReaderFactory(map) {
@@ -522,8 +536,8 @@ function test() {
 }
 
 (async function () {
-  await lint();
   test();
+  await lint();
 }).apply().catch(error => {
   process.exitCode = 1;
   console.error(error);

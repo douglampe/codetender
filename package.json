@@ -37,7 +37,7 @@
   "eslintConfig": {
     "extends": "xo-space",
     "rules": {
-      "max-nested-callbacks": "off"
+      "max-nested-callbacks": "warn"
     }
   }
 }
