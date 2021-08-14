@@ -39,7 +39,7 @@ async function main() {
  * @param {string} folder Destination folder
  * @param {Object} options Options
  */
-function handleNew(template, folder, options) {
+async function handleNew(template, folder, options) {
   // Get options from root command for CLI
   while (options && options.parent) {
     options = options.parent;
@@ -61,7 +61,8 @@ function handleNew(template, folder, options) {
     file: options ? options.file : null,
   };
 
-  new CodeTender().new(config).then(process.exit);
+  const ct = new CodeTender();
+  await ct.new(config).then(process.exit);
 }
 
 /**
@@ -101,7 +102,7 @@ function handleAdd(template, folder, options) {
  * @param {string} folder Destination folder
  * @param {Object} options Options
  */
-function handleReplace(folder, options) {
+async function handleReplace(folder, options) {
   // Get options from root command for CLI
   while (options && options.parent) {
     options = options.parent;
@@ -121,7 +122,8 @@ function handleReplace(folder, options) {
     file: options ? options.file : null,
   };
 
-  new CodeTender().replace(config);
+  const ct = new CodeTender();
+  await ct.replace(config);
 }
 
 main();
