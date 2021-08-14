@@ -26,6 +26,7 @@
   ],
   "delete": [
     "delete-folder/",
-    "delete-file.txt"
+    "delete-file.txt",
+    "codetender-*.js"
   ]
 }

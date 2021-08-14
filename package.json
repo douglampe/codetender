@@ -1,6 +1,6 @@
 {
   "name": "codetender",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "CodeTender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
@@ -35,9 +35,6 @@
     "tap": "^14.11.0"
   },
   "eslintConfig": {
-    "extends": "xo-space",
-    "rules": {
-      "max-nested-callbacks": "warn"
-    }
+    "extends": "xo-space"
   }
 }

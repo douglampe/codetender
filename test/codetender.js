@@ -1,7 +1,7 @@
 const {ESLint} = require('eslint');
 const t = require('tap');
 const q = require('q');
-const fs = require('fs');
+const {promises: fsPromises} = require('fs');
 const rimraf = require('rimraf');
 const fsExtra = require('fs-extra');
 const mkdirp = require('mkdirp');
@@ -11,56 +11,60 @@ const CodeTender = require('../bin/codetender.js');
 // Make sure working directory is this folder:
 process.chdir(__dirname);
 
-function checkFile(file) {
-  if (!fs.existsSync(path.join(__dirname, file))) {
-    return false;
-  }
-
-  const stat = fs.statSync(path.join(__dirname, file));
-
-  return stat && stat.isFile();
+// Asynchronously check if a path exists
+async function exists(path) {
+  try {
+    return await fsPromises.stat(path);
+  } catch {}
 }
 
-function checkDir(file) {
-  if (!fs.existsSync(path.join(__dirname, file))) {
-    return false;
-  }
-
-  const stat = fs.statSync(path.join(__dirname, file));
-
-  return stat && stat.isDirectory();
-}
-
-function deferredRead(file) {
+async function remove(file) {
   const deferred = q.defer();
 
-  fs.readFile(file, {encoding: 'utf8'}, (err, data) => {
-    if (err) {
-      deferred.reject(err);
-    } else {
-      deferred.resolve(data);
-    }
-  });
+  const stat = await exists(file);
+
+  if (stat) {
+    rimraf(file, () => {
+      deferred.resolve();
+    });
+  }
 
   return deferred.promise;
 }
 
-function checkContents(file, expected) {
+async function checkFile(file) {
+  const stats = await exists(path.join(__dirname, file));
+
+  return stats && stats.isFile();
+}
+
+async function checkDir(file) {
+  const stat = await exists(path.join(__dirname, file));
+
+  return stat && stat.isDirectory();
+}
+
+async function checkContents(file, expected) {
   if (!checkFile(file)) {
     return false;
   }
 
-  const contents = fs.readFileSync(path.join(__dirname, file), 'utf8');
+  try {
+    const contents = await fsPromises.readFile(path.join(__dirname, file), 'utf8');
 
-  return contents === expected;
+    return contents === expected;
+  } catch {
+    return false;
+  }
 }
 
 function checkLog(log, expected) {
-  if (log.filter(l => l.indexOf(expected) >= 0).length > 0) {
+  if (log.filter(l => l.indexOf && l.indexOf(expected) >= 0).length > 0) {
     return true;
   }
 
-  console.log(log);
+  log.forEach(l => t.comment(l));
+
   return false;
 }
 
@@ -73,32 +77,18 @@ function checkNoLog(log, expected) {
   return false;
 }
 
-function cleanup(folder, err) {
-  rimraf(path.join(__dirname, folder), () => {
-    if (err) {
-      t.threw(err);
-    }
-  });
+async function cleanup(folder, err) {
+  await remove(path.join(__dirname, folder));
+  if (err) {
+    t.threw(err);
+  }
 }
 
-function makeGitFile(folder) {
-  const deferred = q.defer();
-
-  mkdirp(folder).then(() => {
-    // Copy from source to destination:
-    mkdirp(folder + '/.git').then(err => {
-      fs.writeFile(folder + '/.git/foo.txt', 'foo', err2 => {
-        if (err2) {
-          cleanup(folder, err);
-          deferred.resolve();
-        } else {
-          deferred.resolve();
-        }
-      });
-    }).catch(deferred.reject);
-  });
-
-  return deferred.promise;
+async function makeGitFile(folder) {
+  await mkdirp(folder);
+  // Copy from source to destination:
+  await mkdirp(folder + '/.git');
+  await fsPromises.writeFile(folder + '/.git/foo.txt', 'foo');
 }
 
 async function lint() {
@@ -142,7 +132,7 @@ function testReaderFactory(map) {
   });
 }
 
-function testNew(t, verbose) {
+async function testNew(t, verbose) {
   const config = {
     verbose,
     template: 'sample/local',
@@ -150,42 +140,41 @@ function testNew(t, verbose) {
     file: 'sample/local/codetender.json',
   };
 
-  t.test('Test codetender new', t => {
+  t.test('Test codetender new', async t => {
     const ct = new CodeTender();
 
-    ct.new(config).then(() => {
-      t.teardown(err => {
-        cleanup(config.folder, err);
-      });
-      t.plan(8);
-      defineReplaceTests(t, ct, config, verbose);
-      defineNewTests(t, ct, config);
+    await ct.new(config);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
+    t.plan(8);
+    defineReplaceTests(t, ct, config, verbose);
+    defineNewTests(t, ct, config);
   }).catch(t.threw);
 }
 
 function defineNewTests(t, ct, config) {
-  t.test('Test .codetender configs', t => {
-    t.notOk(checkFile(config.folder + '/codetender-before.js'), 'codetender-before is removed');
-    t.notOk(checkFile(config.folder + '/codetender-after.js'), 'codetender-after is removed');
+  t.test('Test .codetender configs', async t => {
+    t.notOk(await checkFile(config.folder + '/codetender-before.js'), 'codetender-before is removed');
+    t.notOk(await checkFile(config.folder + '/codetender-after.js'), 'codetender-after is removed');
     t.ok(checkLog(ct.logOutput, 'This is a test. If this were a real template, there would be some useful info here.'), 'Banner appears only once');
-    t.ok(checkContents(config.folder + '/' + ct.config.targetName + '.txt', ct.config.targetName), 'root folder is a variable');
-    t.ok(checkContents(config.folder + '/' + ct.config.targetName + '-something-else.txt', ct.config.targetName + '-something-else'), 'root folder is a variable');
+    t.ok(await checkContents(config.folder + '/' + ct.config.targetName + '.txt', ct.config.targetName), 'root folder is a variable');
+    t.ok(await checkContents(config.folder + '/' + ct.config.targetName + '-something-else.txt', ct.config.targetName + '-something-else'), 'root folder is a variable');
     t.end();
   });
-  t.test('Test ignore config', t => {
-    t.notOk(checkDir(config.folder + '/ignored-folder'), 'ignored folders are removed');
-    t.notOk(checkFile(config.folder + '/ignore-file.txt'), 'ignored files are removed');
+  t.test('Test ignore config', async t => {
+    t.notOk(await checkDir(config.folder + '/ignored-folder'), 'ignored folders are removed');
+    t.notOk(await checkFile(config.folder + '/ignore-file.txt'), 'ignored files are removed');
     t.end();
   });
-  t.test('Test scripts config', t => {
-    t.ok(checkContents(config.folder + '/before.txt', 'bar'), 'before script works');
-    t.ok(checkContents(config.folder + '/after.txt', 'foo'), 'after script works');
+  t.test('Test scripts config', async t => {
+    t.ok(await checkContents(config.folder + '/before.txt', 'bar'), 'before script works');
+    t.ok(await checkContents(config.folder + '/after.txt', 'foo'), 'after script works');
     t.end();
   });
 }
 
-function testAdd(t, overwrite, verbose) {
+async function testAdd(t, overwrite, verbose) {
   const config = {
     verbose,
     overwrite,
@@ -197,28 +186,27 @@ function testAdd(t, overwrite, verbose) {
   t.test('Test codetender add', t => {
     mkdirp(config.folder).then(() => {
       // Copy from source to destination:
-      fsExtra.copy('sample/add', config.folder, err => {
+      fsExtra.copy('sample/add', config.folder, async err => {
         if (err) {
           t.threw(err);
         } else {
-          makeGitFile(config.folder).then(() => {
-            const ct = new CodeTender();
+          await makeGitFile(config.folder);
+          const ct = new CodeTender();
 
-            ct.add(config).then(() => {
-              t.teardown(err => {
-                cleanup(config.folder, err);
-              });
-              t.plan(5);
-              t.resolveMatch(deferredRead(config.folder + '/still-here.txt'), 'This existing file that does not match template should be unchanged so foo should still say foo.', 'Existing files are unmodified.');
-              if (config.overwrite) {
-                t.ok(checkContents(config.folder + '/README.md', '# This is a sample Served template.'), 'README.md is overwritten');
-              } else {
-                t.ok(checkContents(config.folder + '/README.md', 'This should be replaced with -o only.'), 'README.md is not overwritten');
-              }
+          await ct.add(config);
 
-              defineNewTests(t, ct, config);
-            }).catch(t.threw);
-          }).catch(t.threw);
+          t.teardown(async err => {
+            await cleanup(config.folder, err);
+          });
+          t.plan(5);
+          t.resolveMatch(fsPromises.readFile(config.folder + '/still-here.txt', {encoding: 'utf8'}), 'This existing file that does not match template should be unchanged so foo should still say foo.', 'Existing files are unmodified.');
+          if (config.overwrite) {
+            t.ok(await checkContents(config.folder + '/README.md', '# This is a sample Served template.'), 'README.md is overwritten');
+          } else {
+            t.ok(await checkContents(config.folder + '/README.md', 'This should be replaced with -o only.'), 'README.md is not overwritten');
+          }
+
+          defineNewTests(t, ct, config);
         }
       });
     });
@@ -226,22 +214,22 @@ function testAdd(t, overwrite, verbose) {
 }
 
 function defineReplaceTests(t, ct, config, verbose) {
-  t.test('Test file and folder renaming', t => {
-    t.ok(checkFile(config.folder + '/bar.js'), 'foo replaced with bar');
-    t.ok(checkDir(config.folder + '/folder'), 'sub replaced with folder');
-    t.ok(checkDir(config.folder + '/folder/deep-path/deep-bar-folder-Served-bar'), 'Multiple tokens are replaced in folder names');
+  t.test('Test file and folder renaming', async t => {
+    t.ok(await checkFile(config.folder + '/bar.js'), 'foo replaced with bar');
+    t.ok(await checkDir(config.folder + '/folder'), 'sub replaced with folder');
+    t.ok(await checkDir(config.folder + '/folder/deep-path/deep-bar-folder-Served-bar'), 'Multiple tokens are replaced in folder names');
     t.end();
   });
-  t.test('Test content replacement', t => {
-    t.ok(checkContents(config.folder + '/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), 'foo, CodeTender, and sub all replaced');
-    t.ok(checkContents(config.folder + '/README.md', '# This is a sample Served template.'), 'README is processed');
+  t.test('Test content replacement', async t => {
+    t.ok(await checkContents(config.folder + '/folder/bar-something.txt', 'This is a Served file in a folder to be renamed.'), 'foo, CodeTender, and sub all replaced');
+    t.ok(await checkContents(config.folder + '/README.md', '# This is a sample Served template.'), 'README is processed');
     t.end();
   });
-  t.test('Test noReplace config', t => {
-    t.ok(checkDir(config.folder + '/noReplace-folder/sub', 'foo'), 'noReplace folders are skipped');
-    t.ok(checkContents(config.folder + '/no-replace-file.txt', 'foo'), 'noReplace files are skipped');
-    t.ok(checkContents(config.folder + '/noReplace-folder/sub/foo.txt', 'foo'), 'noReplace folder contents are skipped');
-    t.ok(checkContents(config.folder + '/foo/README.md', '# This folder should still be called foo due to noReplace'), 'noReplace folders aren\'t processed');
+  t.test('Test noReplace config', async t => {
+    t.ok(await checkDir(config.folder + '/noReplace-folder/sub', 'foo'), 'noReplace folders are skipped');
+    t.ok(await checkContents(config.folder + '/no-replace-file.txt', 'foo'), 'noReplace files are skipped');
+    t.ok(await checkContents(config.folder + '/noReplace-folder/sub/foo.txt', 'foo'), 'noReplace folder contents are skipped');
+    t.ok(await checkContents(config.folder + '/foo/README.md', '# This folder should still be called foo due to noReplace'), 'noReplace folders aren\'t processed');
     t.end();
   });
 
@@ -252,7 +240,7 @@ function defineReplaceTests(t, ct, config, verbose) {
     t.ok(checkLog(ct.logOutput, '  Conflict: sub -> folder'), 'Displays folder rename conflicts');
 
     if (verbose) {
-      t.ok(checkLog(ct.logOutput, 'foo -> bar (19/4)'), 'Displays replacement counts');
+      t.ok(checkLog(ct.logOutput, 'foo -> bar (17/4)'), 'Displays replacement counts');
       t.ok(checkLog(ct.logOutput, 'foo-something.txt -> bar-something.txt'), 'Displays renamed files');
       t.ok(checkLog(ct.logOutput, 'deep-sub -> deep-folder'), 'Displays renamed folders');
       t.ok(checkLog(ct.logOutput, 'Rename Conflict: foo.txt -> bar.txt in folder'), 'Logs conflict details for files');
@@ -263,14 +251,14 @@ function defineReplaceTests(t, ct, config, verbose) {
     t.end();
   });
 
-  t.test('Test delete config', t => {
-    t.notOk(checkFile(config.folder + '/delete-file.txt'), 'delete files are removed');
-    t.notOk(checkDir(config.folder + '/delete-folder'), 'delete folders are removed');
+  t.test('Test delete config', async t => {
+    t.notOk(await checkFile(config.folder + '/delete-file.txt'), 'delete files are removed');
+    t.notOk(await checkDir(config.folder + '/delete-folder'), 'delete folders are removed');
     t.end();
   });
 }
 
-function testRemote(t, verbose) {
+async function testRemote(t, verbose) {
   const config = {
     verbose,
     template: 'sample/remote',
@@ -283,33 +271,32 @@ function testRemote(t, verbose) {
     ],
   };
 
-  t.test('Test codetender new with remote templates', t => {
+  t.test('Test codetender new with remote templates', async t => {
     const ct = new CodeTender();
 
-    ct.new(config).then(() => {
-      t.teardown(err => {
-        cleanup(config.folder, err);
-      });
-      t.plan(2);
-      t.test('Test remote configs', t => {
-        t.ok(checkContents(config.folder + '/EXAMPLE', 'three'), 'root is processed');
-        t.ok(checkContents(config.folder + '/bar/EXAMPLE', 'bar'), 'folder is processed');
-        t.ok(checkContents(config.folder + '/four/EXAMPLE', 'one'), 'template with no tokens is cloned');
-        t.ok(checkLog(ct.logOutput, 'Processing remote template in /'), 'Logs root processing');
-        t.ok(checkLog(ct.logOutput, 'Processing remote template in foo'), 'Logs folder processing');
-        t.ok(checkNoLog(ct.logOutput, 'Processing remote template in four'), 'Does not log remote with no tokens');
-        t.end();
-      });
-      t.test('Test scripts', t => {
-        t.ok(checkContents(config.folder + '/before.txt', 'bar'), 'before script works');
-        t.ok(checkContents(config.folder + '/after.txt', 'bar'), 'after script works');
-        t.end();
-      });
+    await ct.new(config);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
+    });
+    t.plan(2);
+    t.test('Test remote configs', async t => {
+      t.ok(await checkContents(config.folder + '/EXAMPLE', 'three'), 'root is processed');
+      t.ok(await checkContents(config.folder + '/bar/EXAMPLE', 'bar'), 'folder is processed');
+      t.ok(await checkContents(config.folder + '/four/EXAMPLE', 'one'), 'template with no tokens is cloned');
+      t.ok(checkLog(ct.logOutput, 'Processing remote template in /'), 'Logs root processing');
+      t.ok(checkLog(ct.logOutput, 'Processing remote template in foo'), 'Logs folder processing');
+      t.ok(checkNoLog(ct.logOutput, 'Processing remote template in four'), 'Does not log remote with no tokens');
+      t.end();
+    });
+    t.test('Test scripts', async t => {
+      t.ok(await checkContents(config.folder + '/before.txt', 'bar'), 'before script works');
+      t.ok(await checkContents(config.folder + '/after.txt', 'bar'), 'after script works');
+      t.end();
     });
   }).catch(t.threw);
 }
 
-function testReplace(t, verbose) {
+async function testReplace(t, verbose) {
   const template = 'sample/local';
   const config = {
     verbose,
@@ -331,50 +318,49 @@ function testReplace(t, verbose) {
     ],
   };
 
-  t.test('Test codetender replace', t => {
-    makeGitFile(config.folder).then(() => {
-      // Copy from source to destination:
-      fsExtra.copy(template, config.folder, err => {
-        if (err) {
-          t.threw(err);
-        } else {
-          const ct = new CodeTender();
+  t.test('Test codetender replace', async t => {
+    await makeGitFile(config.folder);
 
-          ct.replace(config).then(() => {
-            t.teardown(err => {
-              cleanup(config.folder, err);
-            });
-            t.plan(6);
-            defineReplaceTests(t, ct, config, verbose);
-            t.ok(checkContents(config.folder + '/.git/foo.txt', 'foo'), '.git is ignored');
-          }).catch(t.threw);
-        }
-      });
-    }).catch(t.threw);
+    // Copy from source to destination:
+    try {
+      await fsExtra.copy(template, config.folder);
+    } catch (err) {
+      t.threw(err);
+    }
+
+    const ct = new CodeTender();
+
+    await ct.replace(config);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
+    });
+    t.plan(6);
+    defineReplaceTests(t, ct, config, verbose);
+    t.ok(await checkContents(config.folder + '/.git/foo.txt', 'foo'), '.git is ignored');
   }).catch(t.threw);
 }
 
-function testInvalidGit(t, verbose) {
+async function testInvalidGit(t, verbose) {
   const config = {
     template: 'http://invalidgitrepo.com/invalid.git',
     folder: './output/test-invalid-git' + (verbose ? '-verbose' : ''),
     verbose,
   };
 
-  t.test('Test codetender new with invalid repo', t => {
+  t.test('Test codetender new with invalid repo', async t => {
     const ct = new CodeTender();
 
     t.plan(2);
-    t.teardown(err => {
-      cleanup(config.folder, err);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
-    t.rejects(ct.new(config), 'Invalid git repo throws error').then(() => {
+    t.rejects(await ct.new(config), 'Invalid git repo throws error').then(() => {
       t.ok(checkLog(ct.logOutput, 'fatal: unable to access \'http://invalidgitrepo.com/invalid.git/\': Could not resolve host: invalidgitrepo.com\n'), 'Invalid git repo logs appropriate message');
     });
   }).catch(t.threw);
 }
 
-function testInvalidRemoteConfig(t, verbose) {
+async function testInvalidRemoteConfig(t, verbose) {
   const config = {
     template: 'sample/config',
     folder: './output/test-invalid-remote-config' + (verbose ? '-verbose' : ''),
@@ -382,20 +368,20 @@ function testInvalidRemoteConfig(t, verbose) {
     file: 'sample/config/invalid-remote-config.json',
   };
 
-  t.test('Test codetender new with invalid remote config', t => {
+  t.test('Test codetender new with invalid remote config', async t => {
     const ct = new CodeTender();
 
     t.plan(2);
-    t.teardown(err => {
-      cleanup(config.folder, err);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
-    t.rejects(ct.new(config), 'Invalid remote config throws error').then(() => {
+    t.rejects(await ct.new(config), 'Invalid remote config throws error').then(() => {
       t.ok(checkLog(ct.logOutput, 'Configuration Error: Remote destinations must be one level down from the root.'), 'Invalid remote config logs appropriate message');
     });
   }).catch(t.threw);
 }
 
-function testInvalidVersion(t, verbose) {
+async function testInvalidVersion(t, verbose) {
   const config = {
     template: 'sample/config',
     folder: './output/test-invalid-version' + (verbose ? '-verbose' : ''),
@@ -403,21 +389,21 @@ function testInvalidVersion(t, verbose) {
     file: 'sample/config/invalid-version.json',
   };
 
-  t.test('Test .codetender new with invalid version', t => {
+  t.test('Test .codetender new with invalid version', async t => {
     const ct = new CodeTender();
     ct.schemaVersion = '2.0.0';
 
     t.plan(2);
-    t.teardown(err => {
-      cleanup(config.folder, err);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
-    t.rejects(ct.new(config), 'Invalid config version throws error').then(() => {
+    t.rejects(await ct.new(config), 'Invalid config version throws error').then(() => {
       t.ok(checkLog(ct.logOutput, 'This version of codetender requires configuration schema version 2.0.0.'), 'Invalid config version logs appropriate message');
     });
   }).catch(t.threw);
 }
 
-function testNewerMinorVersion(t, verbose) {
+async function testNewerMinorVersion(t, verbose) {
   const config = {
     template: 'sample/config',
     folder: './output/test-newer-minor-version' + (verbose ? '-verbose' : ''),
@@ -425,21 +411,21 @@ function testNewerMinorVersion(t, verbose) {
     file: 'sample/config/invalid-minor-version.json',
   };
 
-  t.test('Test .codetender new with newer minor version', t => {
+  t.test('Test .codetender new with newer minor version', async t => {
     const ct = new CodeTender();
     ct.schemaVersion = '1.0.0';
 
-    ct.new(config).then(() => {
-      t.plan(1);
-      t.teardown(err => {
-        cleanup(config.folder, err);
-      });
-      t.ok(checkLog(ct.logOutput, 'Warning: This template requires a newer version of the codetender configuration schema (1.1). Some features may not be supported.'), 'Newer minor config version logs appropriate message');
+    await ct.new(config);
+    t.plan(1);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
+    t.ok(checkLog(ct.logOutput, 'Warning: This template requires a newer version of the codetender configuration schema (1.1). Some features may not be supported.'), 'Newer minor config version logs appropriate message');
+    t.end();
   }).catch(t.threw);
 }
 
-function testOlderMinorVersion(t, verbose) {
+async function testOlderMinorVersion(t, verbose) {
   const config = {
     template: 'sample/config',
     folder: './output/test-older-minor-version' + (verbose ? '-verbose' : ''),
@@ -447,21 +433,20 @@ function testOlderMinorVersion(t, verbose) {
     file: 'sample/config/invalid-minor-version.json',
   };
 
-  t.test('Test .codetender new with older minor version', t => {
+  t.test('Test .codetender new with older minor version', async t => {
     const ct = new CodeTender();
     ct.schemaVersion = '1.2.0';
 
-    ct.new(config).then(() => {
-      t.plan(1);
-      t.teardown(err => {
-        cleanup(config.folder, err);
-      });
-      t.ok(checkLog(ct.logOutput, 'Warning: This template specifies an older version of the codetender configuration schema (1.1). Some features may not be supported.'), 'Older minor config version logs appropriate message');
+    await ct.new(config);
+    t.plan(1);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
+    t.ok(checkLog(ct.logOutput, 'Warning: This template specifies an older version of the codetender configuration schema (1.1). Some features may not be supported.'), 'Older minor config version logs appropriate message');
   }).catch(t.threw);
 }
 
-function testNoVersion(t, verbose) {
+async function testNoVersion(t, verbose) {
   const config = {
     template: 'sample/config',
     folder: './output/test-no-version' + (verbose ? '-verbose' : ''),
@@ -469,20 +454,22 @@ function testNoVersion(t, verbose) {
     file: 'sample/config/no-version.json',
   };
 
-  t.test('Test .codetender new with no version', t => {
+  t.test('Test .codetender new with no version', async t => {
     const ct = new CodeTender();
 
-    ct.new(config).then(() => {
-      t.plan(1);
-      t.teardown(err => {
-        cleanup(config.folder, err);
-      });
-      t.ok(checkLog(ct.logOutput, 'Warning: no version specified in'), 'Invalid minor config version logs appropriate message');
+    try {
+      await ct.new(config);
+    } catch {}
+
+    t.plan(1);
+    t.teardown(async err => {
+      await cleanup(config.folder, err);
     });
+    t.ok(checkLog(ct.logOutput, 'Warning: no version specified in'), 'Invalid minor config version logs appropriate message');
   }).catch(t.threw);
 }
 
-function testCli(t, verbose) {
+async function testCli(t, verbose) {
   // Pad prompt with leading spaces due to formatting:
   const map = {'  some-prompt': 'some-value'};
 
@@ -493,50 +480,54 @@ function testCli(t, verbose) {
     readerFactory: testReaderFactory(map),
   };
 
-  t.test('Test codetender CLI', t => {
+  t.test('Test codetender CLI', async t => {
     const ct = new CodeTender();
 
-    ct.new(config).then(() => {
-      t.teardown(err => {
-        cleanup(config.folder, err);
+    try {
+      await ct.new(config);
+      t.teardown(async err => {
+        await cleanup(config.folder, err);
       });
       t.plan(1);
-      t.test('Test .codetender config replacements', t => {
-        t.ok(checkContents(config.folder + '/test.txt', 'some-value-baz'), 'Prompt and replacements both work');
+      t.test('Test .codetender config replacements', async t => {
+        t.ok(await checkContents(config.folder + '/test.txt', 'some-value-baz'), 'Prompt and replacements both work');
+        t.notOk(await checkDir(ct.tempPath), 'Deletes temp folder when called via CLI');
         t.end();
       });
-    });
-  }).catch(t.threw);
+    } catch (err) {
+      await cleanup(config.folder, err);
+    }
+  });
 }
 
-function test() {
-  testNoVersion(t, false);
+async function test() {
+  await testNoVersion(t, false);
 
-  testInvalidVersion(t, false);
+  await testInvalidVersion(t, false);
 
-  testNewerMinorVersion(t, false);
+  await testNewerMinorVersion(t, false);
 
-  testOlderMinorVersion(t, false);
+  await testOlderMinorVersion(t, false);
 
-  testCli(t, false);
+  await testCli(t, false);
 
-  testNew(t, false);
+  await testNew(t, false);
 
-  testAdd(t, false, false);
+  await testAdd(t, false, false);
 
-  testAdd(t, true, false);
+  await testAdd(t, true, false);
 
-  testReplace(t, false);
+  await testReplace(t, false);
 
-  testInvalidGit(t, false);
+  await testInvalidGit(t, false);
 
-  testRemote(t, false);
+  await testRemote(t, false);
 
-  testInvalidRemoteConfig(t, false);
+  await testInvalidRemoteConfig(t, false);
 }
 
-(async function () {
-  test();
+(async () => {
+  await test();
   await lint();
 }).apply().catch(error => {
   process.exitCode = 1;
