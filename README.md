@@ -177,7 +177,7 @@ example if you have patterns `foo` and `bar` and a file named `foobar.txt` that 
 renaming, you must add the `overwrite` flag to both `foo` and `bar` tokens to replace the existing file with 
 `foobar.txt`.
 
-In the example below, the user would first be prompted: `Enter the name of you project (ex: MyProject):`. Then they 
+In the example below, the user would first be prompted: `Enter the name of your project (ex: MyProject):`. Then they 
 would be prompted: `Replace all instances of 'MyFunction' with:`. All instances of `text to always replace` will be
 replaced with `replacement value`. `README.codetender.md` will be renamed `README.md` after deleting the original
 `README.md`. All instances of `text to replace with variable` will be replaced with `variable value` and 
@@ -194,7 +194,7 @@ replaced with `replacement value`. `README.codetender.md` will be renamed `READM
   "tokens": [
     {
       "pattern": "MyApplication",
-      "prompt": "Enter the name of you project (ex: MyProject):"
+      "prompt": "Enter the name of your project (ex: MyProject):"
     },
     {
       "pattern": "MyFunction",
@@ -233,6 +233,10 @@ option, the values in the `--file` file are appended after the values in the `.c
       "ignore_this_file.txt"
   ]
 ```
+
+In orer to avoid corrupting local repositories or codetender configurations, some patterns are always ignored. Any
+folder named `.git` is always ignored along with its contents. Any file in the root template folder named `.codetender`
+is ignored.
 
 ### Files Skipped by Token Replacement
 
