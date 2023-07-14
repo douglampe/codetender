@@ -254,6 +254,10 @@ values in the `.codetender` file.
   ]
 ```
 
+In orer to avoid corrupting local repositories or codetender configurations, some patterns are always skipped. Any
+folder named `.git` is always skipped along with its contents. Any file in the root template folder named `.codetender`
+is skipped.
+
 ### Scripts
 
 CodeTender supports execution of scripts before or after token replacement. The `before` script is executed after the 
