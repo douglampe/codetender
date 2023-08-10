@@ -1,4 +1,6 @@
 node_modules/
+dist/
+coverage/
 test/output/
 .vscode/
 **/.DS_Store

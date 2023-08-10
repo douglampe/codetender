@@ -4,6 +4,7 @@
   "description": "CodeTender scaffolding engine",
   "author": "Doug Lampe",
   "license": "MIT",
+  "main": "index.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/douglampe/codetender"
@@ -12,27 +13,70 @@
     "url": "https://github.com/douglampe/codetender/issues"
   },
   "bin": {
-    "codetender": "bin/codetender-cli.js"
+    "codetender": "dist/src/cli.js"
   },
   "scripts": {
-    "test": "node test/codetender.js"
+    "test-old": "rm -rf test/output && node test/codetender.js",
+    "build": "rm -rf dist && tsc --project tsconfig.json",
+    "dev": "ts-node src/entryPoint.ts",
+    "listen": "node dist/entryPoint.js",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.spec.ts\"",
+    "format:check": "prettier -c .",
+    "lint": "eslint --fix --ext .ts && npm run format",
+    "lint:strict": "eslint --max-warnings=0 --ext .ts",
+    "test": "jest --config jest.json --coverage --detectOpenHandles",
+    "test:nocover": "jest --config jest.json --detectOpenHandles",
+    "test:one": "jest --detectOpenHandles",
+    "prepare": "husky install"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!dist/**",
+      "!src/index.ts"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "./",
+    "testEnvironment": "node",
+    "testRegex": "\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    }
   },
   "preferGlobal": true,
   "dependencies": {
-    "commander": "^6.2.1",
-    "fs-extra": "^9.0.1",
-    "glob": "^7.1.6",
+    "commander": "^11.0.0",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.3",
     "graceful-fs": "^4.2.4",
-    "mkdirp": "^1.0.4",
+    "mkdirp": "^3.0.1",
     "q": "^1.5.1",
-    "replace-in-file": "^6.1.0",
-    "rimraf": "^3.0.2",
-    "semver": "^7.3.4"
+    "replace-in-file": "^7.0.1",
+    "rimraf": "^5.0.1",
+    "semver": "^7.5.4"
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
+    "@types/fs-extra": "^11.0.1",
+    "@types/jest": "29.5.3",
+    "@types/semver": "^7.5.0",
+    "eslint": "8.41.0",
+    "eslint-config-prettier": "^8.6.0",
     "eslint-config-xo-space": "^0.29.0",
-    "tap": "^14.11.0"
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "husky": "^8.0.0",
+    "jest": "29.6.2",
+    "jest-util": "^29.6.2",
+    "prettier": "^2.8.4",
+    "tap": "^14.11.0",
+    "ts-jest": "29.0.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
   },
   "eslintConfig": {
     "extends": "xo-space"

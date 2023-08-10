@@ -1,0 +1,9 @@
+{
+  "version": "1.0",
+  "tokens": [
+    {
+      "pattern": "foo",
+      "replacement": "bar"
+    }
+  ]
+}
