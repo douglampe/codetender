@@ -146,6 +146,7 @@ export class CodeTender {
       }
       
       await this.tokenProcessor.prepTokens();
+      await this.tokenProcessor.prepNoReplace();
       await this.scriptHandler.runBeforeScript();
       await this.tokenProcessor.renameAllFiles();
       await this.scriptHandler.runAfterScript();
@@ -181,6 +182,7 @@ export class CodeTender {
       }
 
       await this.tokenProcessor.prepTokens();
+      await this.tokenProcessor.prepNoReplace();
       await this.tokenProcessor.renameAllFiles();
       await this.fileHandler.cleanUpDelete();
       this.logger.logTokenSuccess();

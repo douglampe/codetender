@@ -2,21 +2,7 @@ import { CodeTender, FileHandler, IQuestionReader } from '../../src/index';
 import fs from 'graceful-fs';
 import cp, { ChildProcess, ExecOptions, ExecException } from 'child_process';
 import pkgInfo from '../../package.json';
-
-function testReaderFactory(map: Record<string, string>): () => IQuestionReader {
-  return () => {
-    return {
-      question: async (prompt: string) => {
-        if (prompt in map) {
-          const response = map[prompt];
-          return Promise.resolve(response);
-        } else {
-          return Promise.reject(`Prompt '${prompt}' not found in map`);
-        }
-      },
-    }
-  };
-}
+import { testReaderFactory } from '../Util';
 
 describe('CodeTender', () => {  
   afterEach(() => {
@@ -661,7 +647,10 @@ describe('CodeTender', () => {
         '',
         'Prepping tokens...',
         'Looking for variable CODETENDER_ROOT in bar...',
-        'No globs specified to skip token replacement.',
+        'Processing globs specified to skip token replacement...',
+        '  Checking pattern noReplace*',
+        '  Checking pattern **/.git/',
+        '  Checking pattern .codetender',
         'No before script found.',
         '',
         'Renaming files and replacing tokens where found...',
@@ -914,7 +903,10 @@ describe('CodeTender', () => {
         '',
         'Prepping tokens...',
         'Looking for variable CODETENDER_ROOT in bar...',
-        'No globs specified to skip token replacement.',
+        'Processing globs specified to skip token replacement...',
+        '  Checking pattern noReplace*',
+        '  Checking pattern **/.git/',
+        '  Checking pattern .codetender',
         'No before script found.',
         '',
         'Renaming files and replacing tokens where found...',

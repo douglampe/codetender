@@ -46,17 +46,18 @@ export class InputHandler {
     const newFrom = await this.ask('  Token to replace [done]: ');
 
     if (newFrom !== '') {
-      const newToken: Token = {
-        pattern: TokenProcessor.convertStringToToken(newFrom),
-      };
-      this.ct.state.process.tokens.push(newToken);
       const newTo = await this.ask('  Replace with [abort]: ');
-
+      
       if (newTo === '') {
         return false;
       }
 
-      newToken.replacement = newTo;
+      const newToken: Token = {
+        pattern: TokenProcessor.convertStringToToken(newFrom),
+        replacement: newTo,
+      };
+      this.ct.state.process.tokens.push(newToken);
+
       await this.getTokensFromCommandLine();
     } else if (this.ct.state.process.tokens.length > 0) {
       return true;
@@ -78,7 +79,7 @@ export class InputHandler {
     for await (const token of this.ct.state.process.tokens!) {
       if (token.prompt) {
         await this.getTokenFromPrompt(token);
-        if (token.replacement === '') {
+        if (!token.replacement) {
           return false;
         }
       }
@@ -92,7 +93,12 @@ export class InputHandler {
    * @param {object} token
    */
   public async getTokenFromPrompt(token: Token) {
-    token.replacement = await this.ask('  ' + token.prompt || "  Replace all instances of '' + token.pattern + '' with [abort]:");
+    const prompt = token.prompt ?? `  Replace all instances of '${token.pattern}' with [abort]:`;
+    const replacement = await this.ask('  ' + prompt);
+    
+    if (replacement !== '') {
+      token.replacement = replacement;
+    }
   }
 
   /**

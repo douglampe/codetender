@@ -8,16 +8,14 @@ export class ScriptHandler {
   }
 
   // Run the before script if it exists
-  runBeforeScript() {
+  async runBeforeScript() {
     if (this.ct.config.scripts && this.ct.config.scripts.before) {
       this.ct.logger.verboseLog('Running before script...');
 
-      return this.ct.runChildProcess(this.ct.config.scripts.before, this.ct.state.source.sourcePath);
+      await this.ct.runChildProcess(this.ct.config.scripts.before, this.ct.state.source.sourcePath);
     }
 
     this.ct.logger.verboseLog('No before script found.');
-
-    return Promise.resolve();
   }
 
   // Run the after script if present

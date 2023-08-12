@@ -31,8 +31,10 @@ export class TokenProcessor {
       this.replaceVariables(mapItem);
       this.ct.state.process.tokenMap[mapItem.pattern!] = mapItem;
     });
+  }
 
-    if (this.ct.state.process.noReplace.length ?? 0 < 1) {
+  public async prepNoReplace() {
+    if ((this.ct.state.process.noReplace.length ?? 0) < 1) {
       this.ct.logger.verboseLog('No globs specified to skip token replacement.');
     } else {
       this.ct.logger.verboseLog('Processing globs specified to skip token replacement...');
@@ -205,7 +207,7 @@ export class TokenProcessor {
   }
 
   replaceVariable(text: string, name: string, value: string) {
-    const regex = new RegExp('\\$' + name, 'g');
+    const regex = new RegExp(`\\$${name}`, 'g');
     this.ct.logger.verboseLog(`Looking for variable ${name} in ${text}...`); // + ':' + text.match(regex));
 
     return text.replace(regex, value);
