@@ -1,5 +1,5 @@
 import { CodeTender, ConfigParser, FileHandler } from '../../../src/index';
-import fs from 'fs';
+import fs from 'graceful-fs';
 
 describe('ConfigParser', () => {
   describe('readConfig()', () => {

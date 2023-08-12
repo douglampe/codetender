@@ -24,7 +24,7 @@
     "format:check": "prettier -c .",
     "lint": "eslint --fix --ext .ts && npm run format",
     "lint:strict": "eslint --max-warnings=0 --ext .ts",
-    "test": "jest --config jest.json --coverage --detectOpenHandles",
+    "test": "jest --config jest.json  --runInBand --coverage --detectOpenHandles",
     "test:nocover": "jest --config jest.json --detectOpenHandles",
     "test:one": "jest --detectOpenHandles",
     "prepare": "husky install"

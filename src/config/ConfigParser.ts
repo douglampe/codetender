@@ -1,6 +1,6 @@
 import path from 'path';
 import semver from 'semver';
-import fs from 'fs';
+import fs from 'graceful-fs';
 
 import { CodeTender, FileHandler, RemoteTemplateConfig, Token } from '../index';
 

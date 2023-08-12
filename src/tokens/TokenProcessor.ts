@@ -1,6 +1,6 @@
 import { glob } from 'glob';
 import path from 'path';
-import fs from 'fs';
+import fs from 'graceful-fs';
 import { TokenMapItem } from './TokenMapItem';
 import { CodeTender } from '../CodeTender';
 import { FileHandler } from '../io/FileHandler';

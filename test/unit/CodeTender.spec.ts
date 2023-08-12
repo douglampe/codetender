@@ -1,5 +1,5 @@
 import { CodeTender, FileHandler, IQuestionReader } from '../../src/index';
-import fs from 'fs';
+import fs from 'graceful-fs';
 import cp, { ChildProcess, ExecOptions, ExecException } from 'child_process';
 import pkgInfo from '../../package.json';
 

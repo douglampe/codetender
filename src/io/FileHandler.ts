@@ -1,7 +1,7 @@
 import path from 'path';
 import { rimraf } from 'rimraf';
 import * as fsExtra from 'fs-extra';
-import fs from 'fs';
+import fs from 'graceful-fs';
 import { CodeTender } from 'src/CodeTender';
 import { ReplaceInFileConfig, replaceInFile } from 'replace-in-file';
 
@@ -72,17 +72,17 @@ export class FileHandler {
   }
 
   async deleteTemp() {
-    this.ct.logger.verboseLog(`Cleaning up temporary folder: ${this.ct.state.process.tempPath}`);
-
     if (!this.ct.state.process.tempPath) {
       this.ct.logger.verboseLog('Temporary folder not defined. Skipping delete.');
       return;
     }
-
+    
     if (!(await FileHandler.dirExists(this.ct.state.process.tempPath))) {
       this.ct.logger.verboseLog('Temporary folder not found. Skipping delete.');
       return;
     }
+
+    this.ct.logger.verboseLog(`Cleaning up temporary folder: ${this.ct.state.process.tempPath}`);
 
     await FileHandler.remove(this.ct.state.process.tempPath);
 
@@ -96,12 +96,14 @@ export class FileHandler {
 
   // Asynchronously check if a path exists
   public static async dirExists(path: string) {
-    const stats = await fs.promises.stat(path);
+    try { 
+      const stats = await fs.promises.stat(path);
 
-    if (stats) {
-      return stats.isDirectory();
+      if (stats) {
+        return stats.isDirectory();
+      }
     }
-
+    catch {}
     return false;
   }
 
@@ -115,7 +117,15 @@ export class FileHandler {
   }
 
   public static async ensurePathExists(path: string): Promise<void> {
-    await fsExtra.mkdirp(path);
+    return new Promise((resolve, reject) => {
+      fsExtra.mkdirp(path, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
   public static async copy(from: string, to: string, overwrite: boolean) {
