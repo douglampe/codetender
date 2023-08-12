@@ -1,7 +1,7 @@
 import path from 'path';
 import pkgInfo from '../package.json';
 
-import { exec } from 'child_process';
+import cp from 'child_process';
 
 import { 
   CodeTenderConfig,
@@ -118,14 +118,18 @@ export class CodeTender {
     if (await FileHandler.dirExists(this.state.target.folder)) {
       this.logger.log(
         'Folder ' +
-        this.config.folder +
+        this.state.target.folder +
         " already exists. Please specify a valid name for a new folder or use 'codetender replace' to replace tokens in existing files.",
         );
       throw new Error('Folder ' + this.config.folder + ' already exists.');
     }
-    
+
+    await this.newOrAdd();
+  }
+
+  private async newOrAdd(add: boolean = false) {
     try {
-      this.logger.splash('Serving up code...');
+      this.logger.splash(`Serving up${add ? ' more' : ''} code...`);
       await this.fileHandler.createTempFolder();
       await this.copyOrClone();
       this.logger.logCloneSuccess();
@@ -157,8 +161,6 @@ export class CodeTender {
     }
   }
 
-  public async add() {}
-
   public async replace() {
     this.state.process.processPath = this.state.target.targetPath;
 
@@ -168,13 +170,13 @@ export class CodeTender {
       );
       throw new Error(`Folder ${this.config.folder} does not exist.`);
     }
-
-    this.logger.splash('Replacing in place...');
-
+    
     try {
+      this.logger.splash('Replacing in place...');
       await this.configParser.readFileConfig();
 
       if (!(await this.inputHandler.getTokens())) {
+        this.logger.verboseLog('Abort requested. Exiting...');
         return;
       }
 
@@ -184,7 +186,43 @@ export class CodeTender {
       this.logger.logTokenSuccess();
     } catch (err) {
       this.logger.oops(err, true);
+      throw err;
     }
+  }
+
+  public async add() {
+    if(!await FileHandler.dirExists(this.state.target.targetPath)) {
+      this.logger.log('Folder ' + this.state.target.folder + ' does not exist. Please specify a valid name for an existing folder or use \'codetender new\' to create a folder from a template.');
+      throw new Error('Folder ' + this.state.target.folder + ' does not exist.');
+    }
+
+    await this.newOrAdd(true);
+  }
+
+  public async copyOrClone() {
+    this.logger.verboseLog('Copying or cloning template...');
+    
+    if (await FileHandler.dirExists(this.state.source.template!)) {
+      this.logger.verboseLog('Template is local');
+      this.state.source.isLocalTemplate = true;
+      this.logger.log(`Copying from local template folder: ${this.state.source.template} into temporary folder: ${this.state.source.sourcePath}`);
+
+      return this.fileHandler.copyFromFs(this.state.source.template!, this.state.source.sourcePath);
+    }
+
+    this.logger.verboseLog('Template appears to be remote');
+
+    if (!this.state.source.template.match(/http.+/g)) {
+      this.state.source.template = 'https://github.com/' + this.state.source.template;
+      this.logger.verboseLog('Added https prefix to template: ' + this.state.source.template);
+    }
+
+    if (!this.state.source.template!.match(/.+\.git/g)) {
+      this.state.source.template += '.git';
+      this.logger.verboseLog('Added git extension to template: ' + this.state.source.template);
+    }
+
+    return this.gitClone(this.state.source.template!, this.state.source.sourcePath);
   }
 
   /**
@@ -246,32 +284,6 @@ export class CodeTender {
     }
   }
 
-  public async copyOrClone() {
-    this.logger.verboseLog('Copying or cloning template...');
-    
-    if (await FileHandler.dirExists(this.state.source.template!)) {
-      this.logger.verboseLog('Template is local');
-      this.state.source.isLocalTemplate = true;
-      this.logger.log(`Copying from local template folder: ${this.state.source.template} into temporary folder: ${this.state.source.sourcePath}`);
-
-      return this.fileHandler.copyFromFs(this.state.source.template!, this.state.source.sourcePath);
-    }
-
-    this.logger.verboseLog('Template appears to be remote');
-
-    if (!this.state.source.template.match(/http.+/g)) {
-      this.state.source.template = 'https://github.com/' + this.state.source.template;
-      this.logger.verboseLog('Added https prefix to template: ' + this.state.source.template);
-    }
-
-    if (!this.state.source.template!.match(/.+\.git/g)) {
-      this.state.source.template += '.git';
-      this.logger.verboseLog('Added git extension to template: ' + this.state.source.template);
-    }
-
-    return this.gitClone(this.state.source.template!, this.state.source.sourcePath);
-  }
-
   /**
    * Clone git repository and detach
    * @param {string} repo URL of git repository
@@ -288,18 +300,14 @@ export class CodeTender {
     this.logger.verboseLog('  Running command: ' + command);
 
     return new Promise<void>((resolve, reject) => {
-      exec(command, { cwd: cwd || this.state.process.processPath }, (err, stdout, stderr) => {
+      cp.exec(command, { cwd: cwd }, (err, stdout, stderr) => {
         if (err) {
-          reject(stderr);
+          reject(err);
         } else {
           resolve();
         }
       });
     });
-  }
-
-  async exit(failed: boolean = false) {
-    return process.exit(failed ? 1 : 0);
   }
 
   public static getVersion() {

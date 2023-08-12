@@ -36,8 +36,6 @@ describe('ConfigParser', () => {
         logger: jest.fn(),
       });
       
-      jest.spyOn(ct, 'exit').mockReturnValue(undefined as never);
-    
       const parser = new ConfigParser(ct);
 
       await expect(parser.readConfig('bar.json', true)).rejects.toEqual(new Error(`This version of codetender requires configuration schema version ${ct.state.config.schemaVersion}.`));
