@@ -29,7 +29,7 @@ export class TokenProcessor {
         count: 0,
       } as TokenMapItem;
       this.replaceVariables(mapItem);
-      this.ct.state.process.tokenMap[mapItem.pattern!] = mapItem;
+      this.ct.state.process.tokenMap[mapItem.pattern.toString()] = mapItem;
     });
   }
 
@@ -55,17 +55,17 @@ export class TokenProcessor {
   }
 
   // Rename files and folders
-  renameAllFiles() {
+  public async renameAllFiles() {
     this.ct.logger.log('');
     this.ct.logger.log('Renaming files and replacing tokens where found...');
-    return this.processFolder(this.ct.state.process.processPath);
+    await this.processFolder(this.ct.state.process.processPath);
   }
 
   /**
    * Find process all child folders then rename items in this folder.
    * @param {string} folder Folder to rename files in
    */
-  async processFolder(folder: string) {
+  public async processFolder(folder: string) {
     this.ct.logger.verboseLog(`Processing folder: ${folder}`);
     const contents = await fs.promises.readdir(folder);
 
@@ -75,7 +75,7 @@ export class TokenProcessor {
 
   // Queue a check for every item in the folder to see if it is
   // a sub folder.
-  async processChildFolders(folder: string, contents: string[]) {
+  public async processChildFolders(folder: string, contents: string[]) {
     for await (const item of contents) {
       const itemPath = path.join(folder, item);
       await this.processItem(itemPath);
@@ -84,7 +84,7 @@ export class TokenProcessor {
 
   // Check an item to determine if it is a folder. If it is a folder,
   // process it. Otherwise ignore.
-  async processItem(itemPath: string) {
+  public async processItem(itemPath: string) {
     if (this.ct.state.output.notReplacedFiles[itemPath]) {
       this.ct.logger.verboseLog('Skipping item marked for noReplace: ' + itemPath);
       return;
@@ -94,35 +94,33 @@ export class TokenProcessor {
       await this.processFolder(itemPath);
     }
 
-    if (!this.ct.state.output.notReplacedFiles[itemPath]) {
-      this.ct.logger.verboseLog('Replacing tokens in: ' + itemPath);
+    this.ct.logger.verboseLog('Replacing tokens in: ' + itemPath);
 
-      const keys = Object.keys(this.ct.state.process.tokenMap);
+    const keys = Object.keys(this.ct.state.process.tokenMap);
 
-      for await (const key of keys) {
-        const token = this.ct.state.process.tokenMap[key];
+    for await (const key of keys) {
+      const token = this.ct.state.process.tokenMap[key];
 
-        try {
-          const results = await FileHandler.replaceInFile({
-            files: itemPath,
-            from: token.pattern!,
-            to: token.replacement,
-            countMatches: true,
-          });
+      try {
+        const results = await FileHandler.replaceInFile({
+          files: itemPath,
+          from: token.pattern!,
+          to: token.replacement,
+          countMatches: true,
+        });
 
-          results.forEach((result) => {
-            if (result.hasChanged) {
-              token.count += result.numReplacements!;
-              token.files.push({
-                file: itemPath,
-                count: result.numReplacements!,
-              });
-            }
-          });
-        } catch (error) {
-          //TODO: Handle these errors
-          this.ct.logger.verboseLog(`Error replacing tokens: ${error}`);
-        }
+        results.forEach((result) => {
+          if (result.hasChanged) {
+            token.count += result.numReplacements!;
+            token.files.push({
+              file: itemPath,
+              count: result.numReplacements!,
+            });
+          }
+        });
+      } catch (error) {
+        //TODO: Handle these errors
+        this.ct.logger.verboseLog(`Error replacing tokens: ${error}`);
       }
     }
   }
@@ -146,6 +144,11 @@ export class TokenProcessor {
     const oldItem = item;
     const tokens: Array<TokenMapItem> = [];
 
+    if (this.ct.state.output.notReplacedFiles[oldFile]) {
+      this.ct.logger.verboseLog('Skipping file marked noReplace: ' + oldFile);
+      return;
+    }
+
     Object.keys(this.ct.state.process.tokenMap).forEach((key) => {
       const token = this.ct.state.process.tokenMap[key];
       if (item.match(token.pattern!)) {
@@ -157,11 +160,6 @@ export class TokenProcessor {
     const newFile = path.join(folder, item);
 
     if (newFile === oldFile) {
-      return;
-    }
-
-    if (this.ct.state.output.notReplacedFiles[oldFile]) {
-      this.ct.logger.verboseLog('Skipping file marked noReplace: ' + oldFile);
       return;
     }
 
@@ -219,11 +217,7 @@ export class TokenProcessor {
       return TokenProcessor.convertStringToToken(item);
     }
 
-    if (item instanceof RegExp) {
-      return item;
-    }
-
-    return '';
+    return item;
   }
 
   // Convert a string to replace to a regex

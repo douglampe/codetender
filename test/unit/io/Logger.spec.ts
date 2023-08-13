@@ -112,6 +112,7 @@ describe('Logger', () => {
       ct.state.process.tokenMap['foo'] = {
         originalPattern: 'foo',
         replacement: 'bar',
+        pattern: /foo/g,
         count: 10,
         files: [{file: 'bar.json', count: 10}],
         renamed: [{old: 'baz.json', new: 'BAZ.json'}],

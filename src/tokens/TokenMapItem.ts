@@ -2,7 +2,7 @@ import { TokenMapFile } from './TokenMapFile';
 
 export interface TokenMapItem {
   originalPattern: string;
-  pattern?: string;
+  pattern: RegExp;
   replacement: string;
   count: number;
   files: Array<TokenMapFile>;
