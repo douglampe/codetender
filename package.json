@@ -13,13 +13,11 @@
     "url": "https://github.com/douglampe/codetender/issues"
   },
   "bin": {
-    "codetender": "dist/src/cli.js"
+    "codetender": "bin/codetender-cli.js"
   },
   "scripts": {
     "test-old": "rm -rf test/output && node test/codetender.js",
     "build": "rm -rf dist && tsc --project tsconfig.json",
-    "dev": "ts-node src/entryPoint.ts",
-    "listen": "node dist/entryPoint.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.spec.ts\"",
     "format:check": "prettier -c .",
     "lint": "eslint --fix --ext .ts && npm run format",
