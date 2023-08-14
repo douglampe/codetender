@@ -75,6 +75,10 @@ describe('CodeTender', () => {
         variables: [{ name: 'foo', value: 'bar' }],
         tokens: [],
         logger: mockLogger,
+        scripts: {
+          before: [ 'before.js' ],
+          after: [ 'after.js' ],
+        }
       });
 
       expect(ct.state).toEqual({
@@ -88,6 +92,10 @@ describe('CodeTender', () => {
             variables: [{ name: 'foo', value: 'bar' }],
             tokens: [],
             logger: mockLogger,
+            scripts: {
+              before: [ 'before.js' ],
+              after: [ 'after.js' ],
+            },
           },
           configPaths: [],
         },
@@ -119,8 +127,8 @@ describe('CodeTender', () => {
           ignore: ['ignore', '**/.git/', '.codetender'],
           noReplace: ['do-not-replace', '**/.git/', '.codetender'],
           scripts: {
-            before: [],
-            after: [],
+            before: [ 'before.js' ],
+            after: [ 'after.js' ],
           },
           delete: [],
           tokenMap: {},
@@ -160,7 +168,7 @@ describe('CodeTender', () => {
         'Template is local',
         `Copying from local template folder: bar into temporary folder: /temp/folder`,
         '  Creating folder: /temp/folder',
-        '  Copying from: bar to: /temp/folder',
+        '  Copying from: bar to: /temp/folder with overwrite false',
       ]);
       expect(mockCopy).toHaveBeenCalledWith('bar', '/temp/folder', false);
     });
@@ -531,7 +539,7 @@ describe('CodeTender', () => {
         'Template is local',
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
@@ -634,7 +642,7 @@ describe('CodeTender', () => {
         'Template is local',
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
@@ -648,7 +656,7 @@ describe('CodeTender', () => {
         '',
         'Processing remote template in folder: /',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: /temp/__CT_TEMPLATE_ROOT__/__CT_REMOTE_ROOT__ to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: /temp/__CT_TEMPLATE_ROOT__/__CT_REMOTE_ROOT__ to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
@@ -673,7 +681,7 @@ describe('CodeTender', () => {
         'No patterns defined for delete config.',
         'Copying from temporary folder /temp to target folder /target/foo',
         '  Creating folder: /target/foo',
-        '  Copying from: /temp/__CT_TEMPLATE_ROOT__ to: /target/foo',
+        '  Copying from: /temp/__CT_TEMPLATE_ROOT__ to: /target/foo with overwrite false',
         'Successfully replaced the following tokens where found:',
         'pattern -> replacement (content/files)',
         '--------------------------------------',
@@ -791,7 +799,7 @@ describe('CodeTender', () => {
         'Template is local',
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
@@ -894,7 +902,7 @@ describe('CodeTender', () => {
         'Template is local',
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
@@ -908,7 +916,7 @@ describe('CodeTender', () => {
         '',
         'Processing remote template in folder: /',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
-        '  Copying from: /temp/__CT_TEMPLATE_ROOT__/__CT_REMOTE_ROOT__ to: /temp/__CT_TEMPLATE_ROOT__',
+        '  Copying from: /temp/__CT_TEMPLATE_ROOT__/__CT_REMOTE_ROOT__ to: /temp/__CT_TEMPLATE_ROOT__ with overwrite false',
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
@@ -933,7 +941,7 @@ describe('CodeTender', () => {
         'No patterns defined for delete config.',
         'Copying from temporary folder /temp to target folder /target/foo',
         '  Creating folder: /target/foo',
-        '  Copying from: /temp/__CT_TEMPLATE_ROOT__ to: /target/foo',
+        '  Copying from: /temp/__CT_TEMPLATE_ROOT__ to: /target/foo with overwrite false',
         'Successfully replaced the following tokens where found:',
         'pattern -> replacement (content/files)',
         '--------------------------------------',

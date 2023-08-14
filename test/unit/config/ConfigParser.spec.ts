@@ -191,9 +191,24 @@ describe('ConfigParser', () => {
       ]);
     });
 
-    it('should parse scripts', async () => {
+    it('should parse scripts as strings', async () => {
       jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
       jest.spyOn(fs.promises, 'readFile').mockResolvedValueOnce('{ "scripts": {"before": "before.js", "after": "after.js"}}');
+
+      const ct = new CodeTender({
+        folder: 'foo',
+        logger: jest.fn(),
+      });
+      const parser = new ConfigParser(ct);
+
+      await parser.readConfig('bar.json');
+
+      expect(ct.state.process.scripts).toEqual({ before: ['before.js'], after: ['after.js'] });
+    });
+
+    it('should parse scripts as arrays', async () => {
+      jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
+      jest.spyOn(fs.promises, 'readFile').mockResolvedValueOnce('{ "scripts": {"before": ["before.js"], "after":[ "after.js"]}}');
 
       const ct = new CodeTender({
         folder: 'foo',
@@ -280,7 +295,22 @@ describe('ConfigParser', () => {
       expect(ct.state.process.delete).toEqual(['delete.js']);
     });
 
-    it('should parse banner', async () => {
+    it('should parse banner as string', async () => {
+      jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
+      jest.spyOn(fs.promises, 'readFile').mockResolvedValueOnce('{ "banner": "This is a banner"}');
+
+      const ct = new CodeTender({
+        folder: 'foo',
+        logger: jest.fn(),
+      });
+      const parser = new ConfigParser(ct);
+
+      await parser.readConfig('bar.json');
+
+      expect(ct.state.process.banner).toEqual(['This is a banner']);
+    });
+
+    it('should parse banner as array', async () => {
       jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
       jest.spyOn(fs.promises, 'readFile').mockResolvedValueOnce('{ "banner": ["This is a banner"]}');
 

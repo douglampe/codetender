@@ -6,11 +6,11 @@ describe('ScriptHandler', () => {
   });
 
   describe('runBeforeScript()', () => {
-    it('should call runChildProcess', async () => {
+    it.each(['before.js', ['before.js']])('should call runChildProcess for %s', async (before) => {
       const ct = new CodeTender({
         folder: 'foo',
         scripts: {
-          before: 'before.js',
+          before,
         },
         verbose: true,
         logger: jest.fn(),
@@ -26,7 +26,7 @@ describe('ScriptHandler', () => {
       expect(mockRunChildProcess).toHaveBeenCalledWith('before.js', '/temp');
     });
 
-    it('should do nothing if no script', async () => {
+    it('should do nothing if no script for', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
@@ -47,11 +47,11 @@ describe('ScriptHandler', () => {
   });
 
   describe('runAfterScript()', () => {
-    it('should call runChildProcess', async () => {
+    it.each(['after.js', ['after.js']])('should call runChildProcess', async (after) => {
       const ct = new CodeTender({
         folder: 'foo',
         scripts: {
-          after: 'after.js',
+          after,
         },
         verbose: true,
         logger: jest.fn(),
