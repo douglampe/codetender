@@ -5,10 +5,10 @@ describe('Logger', () => {
     it('should call console.log and push to output', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', logger: mockLog
+        folder: 'foo',
+        logger: mockLog,
       });
       const logger = new Logger(ct);
-
 
       logger.log('foo');
 
@@ -19,9 +19,9 @@ describe('Logger', () => {
     it('should not call console.log or push to output if quiet is true', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        logger: mockLog, 
-        quiet: true
+        folder: 'foo',
+        logger: mockLog,
+        quiet: true,
       });
       const logger = new Logger(ct);
 
@@ -35,7 +35,7 @@ describe('Logger', () => {
   describe('verboseLog()', () => {
     it('should log if verbose set to true', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
+        folder: 'foo',
         verbose: true,
         logger: jest.fn(),
       });
@@ -50,7 +50,7 @@ describe('Logger', () => {
 
     it('should not log if verbose set to false', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
+        folder: 'foo',
         verbose: false,
         logger: jest.fn(),
       });
@@ -67,8 +67,8 @@ describe('Logger', () => {
   describe('logTokenSuccess', () => {
     it('should log success of template clone', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
-        template: 'https://github.com/foo', 
+        folder: 'foo',
+        template: 'https://github.com/foo',
         verbose: true,
         logger: jest.fn(),
       });
@@ -76,16 +76,16 @@ describe('Logger', () => {
       const logger = new Logger(ct);
 
       const mockLog = jest.spyOn(logger, 'log');
-      
+
       logger.logCloneSuccess();
 
-      expect(mockLog).toHaveBeenCalledWith(`Successfully cloned template from '${ct.config.template}' to '${ct.config.folder}'.`)
+      expect(mockLog).toHaveBeenCalledWith(`Successfully cloned template from '${ct.config.template}' to '${ct.config.folder}'.`);
     });
 
     it('should log success of template copy', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
-        template: 'https://github.com/foo', 
+        folder: 'foo',
+        template: 'https://github.com/foo',
         verbose: true,
         logger: jest.fn(),
       });
@@ -93,20 +93,22 @@ describe('Logger', () => {
       const logger = new Logger(ct);
 
       const mockLog = jest.spyOn(logger, 'log');
-      
+
       logger.logCloneSuccess();
 
-      expect(mockLog).toHaveBeenCalledWith(`Successfully copied template from '${ct.config.template}' to '${ct.config.folder}'.`)
+      expect(mockLog).toHaveBeenCalledWith(`Successfully copied template from '${ct.config.template}' to '${ct.config.folder}'.`);
     });
 
     it('should log success of token replacement', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
+        folder: 'foo',
         verbose: true,
-        tokens: [{
-          pattern: 'foo',
-          replacement: 'bar'
-        }],
+        tokens: [
+          {
+            pattern: 'foo',
+            replacement: 'bar',
+          },
+        ],
         logger: jest.fn(),
       });
       ct.state.process.tokenMap['foo'] = {
@@ -114,32 +116,34 @@ describe('Logger', () => {
         replacement: 'bar',
         pattern: /foo/g,
         count: 10,
-        files: [{file: 'bar.json', count: 10}],
-        renamed: [{old: 'baz.json', new: 'BAZ.json'}],
+        files: [{ file: 'bar.json', count: 10 }],
+        renamed: [{ old: 'baz.json', new: 'BAZ.json' }],
       };
-      
+
       const logger = new Logger(ct);
 
       const mockLog = jest.spyOn(logger, 'log');
-      
+
       logger.logTokenSuccess();
 
       expect(mockLog).toHaveBeenCalledWith('Successfully replaced the following tokens where found:');
       expect(mockLog).toHaveBeenCalledWith('pattern -> replacement (content/files)');
       expect(mockLog).toHaveBeenCalledWith('--------------------------------------');
       expect(mockLog).toHaveBeenCalledWith('foo -> bar (10/1)');
-      expect(mockLog).toHaveBeenCalledWith('  bar.json (10)')
+      expect(mockLog).toHaveBeenCalledWith('  bar.json (10)');
       expect(mockLog).toHaveBeenCalledWith('  baz.json -> BAZ.json');
     });
 
     it('should log rename errors', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
+        folder: 'foo',
         verbose: true,
-        tokens: [{
-          pattern: 'foo',
-          replacement: 'bar'
-        }],
+        tokens: [
+          {
+            pattern: 'foo',
+            replacement: 'bar',
+          },
+        ],
         logger: jest.fn(),
       });
 
@@ -162,8 +166,8 @@ describe('Logger', () => {
 
     it('should log message if no tokens specified', () => {
       const ct = new CodeTender({
-        folder: 'foo', 
-        template: 'https://github.com/foo', 
+        folder: 'foo',
+        template: 'https://github.com/foo',
         verbose: true,
         logger: jest.fn(),
       });
@@ -171,7 +175,7 @@ describe('Logger', () => {
       const logger = new Logger(ct);
 
       const mockLog = jest.spyOn(logger, 'log');
-      
+
       logger.logTokenSuccess();
 
       expect(mockLog).toHaveBeenCalledWith('No tokens specified.');
@@ -187,7 +191,7 @@ describe('Logger', () => {
       const logger = new Logger(ct);
 
       const mockLog = jest.spyOn(logger, 'log');
-      
+
       logger.splash('Serving up code...');
 
       expect(mockLog).toHaveBeenCalledWith('');
@@ -195,16 +199,17 @@ describe('Logger', () => {
       expect(mockLog).toHaveBeenCalledWith(' / ___/__  ___/ /__ / /____ ___  ___/ /__ ____');
       expect(mockLog).toHaveBeenCalledWith('/ /__/ _ \\/ _  / -_) __/ -_) _ \\/ _  / -_) __/');
       expect(mockLog).toHaveBeenCalledWith('\\___/\\___/\\_,_/\\__/\\__/\\__/_//_/\\_,_/\\__/_/   ');
-      expect(mockLog).toHaveBeenCalledWith('Serving up code...');    });
+      expect(mockLog).toHaveBeenCalledWith('Serving up code...');
+    });
   });
 
   describe('bnner()', () => {
     it('should display the banner if a string', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        banner: 'This is a banner', 
-        logger: mockLog, 
+        folder: 'foo',
+        banner: 'This is a banner',
+        logger: mockLog,
         verbose: true,
       });
       const logger = new Logger(ct);
@@ -219,9 +224,9 @@ describe('Logger', () => {
     it('should display the banner if an array', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        banner: ['This is a banner'], 
-        logger: mockLog, 
+        folder: 'foo',
+        banner: ['This is a banner'],
+        logger: mockLog,
         verbose: false,
       });
       const logger = new Logger(ct);
@@ -235,8 +240,8 @@ describe('Logger', () => {
     it('should display a message if no banner found and verbose is true', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        logger: mockLog, 
+        folder: 'foo',
+        logger: mockLog,
         verbose: true,
       });
       const logger = new Logger(ct);
@@ -251,9 +256,9 @@ describe('Logger', () => {
     it('should display oops and message', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        banner: 'This is a banner', 
-        logger: mockLog, 
+        folder: 'foo',
+        banner: 'This is a banner',
+        logger: mockLog,
         verbose: true,
       });
       const logger = new Logger(ct);
@@ -272,9 +277,9 @@ describe('Logger', () => {
     it('should call process.exit if captured is false', () => {
       const mockLog = jest.fn();
       const ct = new CodeTender({
-        folder: 'foo', 
-        banner: 'This is a banner', 
-        logger: mockLog, 
+        folder: 'foo',
+        banner: 'This is a banner',
+        logger: mockLog,
         verbose: true,
       });
       const logger = new Logger(ct);

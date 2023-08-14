@@ -8,15 +8,15 @@ import * as rimraf from 'rimraf';
 jest.mock('fs-extra', () => {
   return {
     ...jest.requireActual('fs-extra'),
-      copy: jest.fn(),
-      mkdirp: jest.fn(),
+    copy: jest.fn(),
+    mkdirp: jest.fn(),
   };
 });
 
 jest.mock('replace-in-file');
 jest.mock('rimraf');
 
-describe('FileHandler', () =>{
+describe('FileHandler', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -55,9 +55,9 @@ describe('FileHandler', () =>{
         verbose: true,
         logger: jest.fn(),
       });
-      
+
       const fileHandler = new FileHandler(ct);
-      
+
       const mockCopy = jest.spyOn(fileHandler, 'copyFromFs').mockResolvedValueOnce(undefined);
 
       await fileHandler.copyFromTemp();
@@ -79,9 +79,9 @@ describe('FileHandler', () =>{
         verbose: true,
         logger: jest.fn(),
       });
-      
+
       const fileHandler = new FileHandler(ct);
-      
+
       await fileHandler.copyFromFs('from', 'to');
 
       expect(mockEnsurePathExists).toHaveBeenCalledWith('to');
@@ -98,18 +98,18 @@ describe('FileHandler', () =>{
       const ct = new CodeTender({
         folder: 'foo',
         template: 'template',
-        ignore: [ 'ignore' ],
+        ignore: ['ignore'],
         verbose: true,
         logger: jest.fn(),
       });
-      
+
       const fileHandler = new FileHandler(ct);
 
       const mockCleanUpFiles = jest.spyOn(fileHandler, 'cleanUpFiles').mockResolvedValueOnce(undefined);
-      
+
       await fileHandler.cleanupIgnored();
 
-      expect(mockCleanUpFiles).toHaveBeenCalledWith([ 'ignore' ], 'ignore');
+      expect(mockCleanUpFiles).toHaveBeenCalledWith(['ignore', '**/.git/', '.codetender'], 'ignore');
     });
   });
 
@@ -129,9 +129,7 @@ describe('FileHandler', () =>{
 
       await fileHandler.deleteTemp();
 
-      expect(ct.logger.logOutput).toEqual([
-        'Temporary folder not defined. Skipping delete.',
-      ]);
+      expect(ct.logger.logOutput).toEqual(['Temporary folder not defined. Skipping delete.']);
     });
 
     it('should exit if temp path does not exist', async () => {
@@ -151,9 +149,7 @@ describe('FileHandler', () =>{
 
       await fileHandler.deleteTemp();
 
-      expect(ct.logger.logOutput).toEqual([
-        'Temporary folder not found. Skipping delete.',
-      ]);
+      expect(ct.logger.logOutput).toEqual(['Temporary folder not found. Skipping delete.']);
     });
 
     it('should call remove', async () => {
@@ -169,7 +165,7 @@ describe('FileHandler', () =>{
         logger: jest.fn(),
       });
       ct.state.process.tempPath = '/temp';
-      
+
       const fileHandler = new FileHandler(ct);
 
       await fileHandler.deleteTemp();
@@ -180,7 +176,9 @@ describe('FileHandler', () =>{
 
   describe('resolve()', () => {
     it('should call path.resolve', () => {
-      const mockResolve = jest.spyOn(path, 'resolve').mockImplementation((...paths: string[]) => { return '/foo/bar'; });
+      const mockResolve = jest.spyOn(path, 'resolve').mockImplementation((...paths: string[]) => {
+        return '/foo/bar';
+      });
 
       FileHandler.resolve('bar');
 
@@ -213,7 +211,7 @@ describe('FileHandler', () =>{
   });
 
   describe('ensurePathExists()', () => {
-    it('should call mkdirp', async() => {
+    it('should call mkdirp', async () => {
       const mockMkdirp = jest.fn();
       jest.spyOn(fsExtra, 'mkdirp').mockImplementation(mockMkdirp);
       mockMkdirp.mockImplementation((path, callback: (err: any) => void) => {
@@ -225,7 +223,7 @@ describe('FileHandler', () =>{
       expect(mockMkdirp.mock.calls[0][0]).toEqual('/foo');
     });
 
-    it('should reject when err is passed', async() => {
+    it('should reject when err is passed', async () => {
       const mockMkdirp = jest.fn();
       jest.spyOn(fsExtra, 'mkdirp').mockImplementation(mockMkdirp);
       mockMkdirp.mockImplementation((path, callback: (err: any) => void) => {
@@ -237,7 +235,7 @@ describe('FileHandler', () =>{
   });
 
   describe('copy()', () => {
-    it('should call copy', async() => {
+    it('should call copy', async () => {
       const mockCopy = jest.spyOn(fsExtra, 'copy');
       mockCopy.mockImplementation((from, to, options, callback: (err: any) => void) => {
         callback(null);
@@ -250,7 +248,7 @@ describe('FileHandler', () =>{
       expect(mockCopy.mock.calls[0][2]).toEqual({ overwrite: true });
     });
 
-    it('should reject when err is passed', async() => {
+    it('should reject when err is passed', async () => {
       const mockCopy = jest.fn();
       jest.spyOn(fsExtra, 'copy').mockImplementation(mockCopy);
       mockCopy.mockImplementation((from, to, options, callback: (err: any) => void) => {
@@ -262,7 +260,7 @@ describe('FileHandler', () =>{
   });
 
   describe('replaceInFile()', () => {
-    it('should call replaceInFile', async() => {
+    it('should call replaceInFile', async () => {
       const mockReplaceInFile = jest.spyOn(replaceInFile, 'replaceInFile').mockResolvedValue(undefined as never);
 
       await FileHandler.replaceInFile({
@@ -280,12 +278,12 @@ describe('FileHandler', () =>{
   });
 
   describe('rimraf()', () => {
-    it('should call rimraf', async() => {
+    it('should call rimraf', async () => {
       const mockRimraf = jest.spyOn(rimraf, 'rimraf').mockResolvedValue(true);
 
       await FileHandler.remove('/delete/me');
 
-      expect(mockRimraf).toHaveBeenCalledWith('/delete/me');
+      expect(mockRimraf).toHaveBeenCalledWith('/delete/me', { glob: true, preserveRoot: false });
     });
   });
 });

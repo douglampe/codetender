@@ -15,7 +15,7 @@ describe('ScriptHandler', () => {
         verbose: true,
         logger: jest.fn(),
       });
-      ct.state.source.sourcePath = '/source';
+      ct.state.process.processPath = '/temp';
 
       const mockRunChildProcess = jest.spyOn(ct, 'runChildProcess').mockReturnValueOnce(undefined as never);
 
@@ -23,7 +23,7 @@ describe('ScriptHandler', () => {
 
       await scriptHandler.runBeforeScript();
 
-      expect(mockRunChildProcess).toHaveBeenCalledWith('before.js', '/source');
+      expect(mockRunChildProcess).toHaveBeenCalledWith('before.js', '/temp');
     });
 
     it('should do nothing if no script', async () => {
@@ -32,7 +32,7 @@ describe('ScriptHandler', () => {
         verbose: true,
         logger: jest.fn(),
       });
-      ct.state.source.sourcePath = '/source';
+      ct.state.process.processPath = '/temp';
 
       const mockRunChildProcess = jest.spyOn(ct, 'runChildProcess').mockReturnValueOnce(undefined as never);
 
@@ -56,7 +56,7 @@ describe('ScriptHandler', () => {
         verbose: true,
         logger: jest.fn(),
       });
-      ct.state.source.sourcePath = '/source';
+      ct.state.process.processPath = '/temp';
 
       const mockRunChildProcess = jest.spyOn(ct, 'runChildProcess').mockReturnValueOnce(undefined as never);
 
@@ -64,7 +64,7 @@ describe('ScriptHandler', () => {
 
       await scriptHandler.runAfterScript();
 
-      expect(mockRunChildProcess).toHaveBeenCalledWith('after.js', '/source');
+      expect(mockRunChildProcess).toHaveBeenCalledWith('after.js', '/temp');
     });
 
     it('should do nothing if no script', async () => {
@@ -73,7 +73,7 @@ describe('ScriptHandler', () => {
         verbose: true,
         logger: jest.fn(),
       });
-      ct.state.source.sourcePath = '/source';
+      ct.state.process.processPath = '/temp';
 
       const mockRunChildProcess = jest.spyOn(ct, 'runChildProcess').mockReturnValueOnce(undefined as never);
 

@@ -9,7 +9,7 @@ export class Logger {
   constructor(ct: CodeTender) {
     this.ct = ct;
 
-    this.logger = ct.config.logger ?? console.log;//console.log.bind(console);
+    this.logger = ct.config.logger ?? console.log; //console.log.bind(console);
     this.logOutput = [];
   }
 
@@ -25,7 +25,6 @@ export class Logger {
   // Log success of token replacement
   public logTokenSuccess() {
     if (this.ct.state.process.tokens.length > 0) {
-
       if (Object.keys(this.ct.state.process.tokenMap).length > 0) {
         this.log('Successfully replaced the following tokens where found:');
         this.log('pattern -> replacement (content/files)');

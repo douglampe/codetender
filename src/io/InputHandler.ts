@@ -47,7 +47,7 @@ export class InputHandler {
 
     if (newFrom !== '') {
       const newTo = await this.ask('  Replace with [abort]: ');
-      
+
       if (newTo === '') {
         return false;
       }
@@ -95,7 +95,7 @@ export class InputHandler {
   public async getTokenFromPrompt(token: Token) {
     const prompt = token.prompt ?? `  Replace all instances of '${token.pattern}' with [abort]:`;
     const replacement = await this.ask('  ' + prompt);
-    
+
     if (replacement !== '') {
       token.replacement = replacement;
     }

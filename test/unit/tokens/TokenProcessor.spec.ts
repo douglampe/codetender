@@ -8,12 +8,11 @@ describe('TokenProcessor', () => {
     jest.resetAllMocks();
   });
 
-
   describe('prepTokens()', () => {
     it('should convert tokens', async () => {
       const ct = new CodeTender({
         folder: 'foo',
-        tokens: [{ pattern: 'foo', replacement: 'bar', }],
+        tokens: [{ pattern: 'foo', replacement: 'bar' }],
         logger: jest.fn(),
       });
 
@@ -36,7 +35,7 @@ describe('TokenProcessor', () => {
     it('should replace variables', async () => {
       const ct = new CodeTender({
         folder: 'foo',
-        tokens: [{ pattern: 'foo', replacement: '$REPLACE_ME', }],
+        tokens: [{ pattern: 'foo', replacement: '$REPLACE_ME' }],
         variables: [{ name: 'REPLACE_ME', value: 'variable' }],
         logger: jest.fn(),
       });
@@ -59,7 +58,7 @@ describe('TokenProcessor', () => {
   });
 
   describe('prepNoReplace()', () => {
-    it ('should build a map of files to not replace', async () => {
+    it('should build a map of files to not replace', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         noReplace: ['foo'],
@@ -68,12 +67,8 @@ describe('TokenProcessor', () => {
       });
 
       const mockGlob = jest.spyOn(glob, 'glob');
-      mockGlob.mockResolvedValueOnce([
-        '/path/.git',
-      ]);
-      mockGlob.mockResolvedValueOnce([
-        '/path/foo',
-      ]);
+      mockGlob.mockResolvedValueOnce(['/path/.git']);
+      mockGlob.mockResolvedValueOnce(['/path/foo']);
 
       const tokenProcessor = new TokenProcessor(ct);
 
@@ -89,7 +84,7 @@ describe('TokenProcessor', () => {
       const ct = new CodeTender({
         folder: 'foo',
         logger: jest.fn(),
-        
+
         verbose: true,
       });
 
@@ -109,7 +104,7 @@ describe('TokenProcessor', () => {
         folder: 'foo',
         logger: jest.fn(),
       });
-      ct.state.process.processPath = '/process'
+      ct.state.process.processPath = '/process';
 
       const tokenProcessor = new TokenProcessor(ct);
 
@@ -134,14 +129,14 @@ describe('TokenProcessor', () => {
       const mockReaddir = jest.fn();
       jest.spyOn(fs.promises, 'readdir').mockImplementationOnce(mockReaddir);
       mockReaddir.mockResolvedValue(['bar']);
-      
+
       const tokenProcessor = new TokenProcessor(ct);
 
       const mockProcessChildFolders = jest.spyOn(tokenProcessor, 'processChildFolders').mockResolvedValue(undefined);
       const mockRenameItems = jest.spyOn(tokenProcessor, 'renameItems').mockResolvedValue(undefined);
 
       await tokenProcessor.processFolder('foo');
-      
+
       expect(mockProcessChildFolders).toHaveBeenCalledWith('foo', ['bar']);
       expect(mockRenameItems).toHaveBeenCalledWith('foo', ['bar']);
     });
@@ -155,12 +150,12 @@ describe('TokenProcessor', () => {
       });
 
       const tokenProcessor = new TokenProcessor(ct);
-      
+
       const mockProcessItem = jest.spyOn(tokenProcessor, 'processItem').mockResolvedValue(undefined);
-      
+
       await tokenProcessor.processChildFolders('/foo', ['bar']);
 
-      expect(mockProcessItem).toHaveBeenCalledWith('/foo/bar')
+      expect(mockProcessItem).toHaveBeenCalledWith('/foo/bar');
     });
   });
 
@@ -210,28 +205,33 @@ describe('TokenProcessor', () => {
           {
             pattern: 'FOO',
             replacement: 'BAR',
-          }
+          },
         ],
         logger: jest.fn(),
       });
 
       const tokenProcessor = new TokenProcessor(ct);
-      
+
       await tokenProcessor.prepTokens();
 
-      const mockReplaceInFile = jest.spyOn(FileHandler, 'replaceInFile')
-      .mockResolvedValueOnce([{
-        file: 'foo',
-        hasChanged: true,
-        numMatches: 1,
-        numReplacements: 1,
-      }])
-      .mockResolvedValueOnce([{
-        file: 'FOO',
-        hasChanged: true,
-        numMatches: 1,
-        numReplacements: 1,
-      }]);
+      const mockReplaceInFile = jest
+        .spyOn(FileHandler, 'replaceInFile')
+        .mockResolvedValueOnce([
+          {
+            file: 'foo',
+            hasChanged: true,
+            numMatches: 1,
+            numReplacements: 1,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            file: 'FOO',
+            hasChanged: true,
+            numMatches: 1,
+            numReplacements: 1,
+          },
+        ]);
 
       await tokenProcessor.processItem('/foo');
 
@@ -245,10 +245,12 @@ describe('TokenProcessor', () => {
       expect(ct.state.process.tokenMap).toEqual({
         '/foo/g': {
           count: 1,
-          files: [{
-            file: '/foo',
-            count: 1,
-          }],
+          files: [
+            {
+              file: '/foo',
+              count: 1,
+            },
+          ],
           originalPattern: 'foo',
           pattern: /foo/g,
           renamed: [],
@@ -257,10 +259,12 @@ describe('TokenProcessor', () => {
         },
         '/FOO/g': {
           count: 1,
-          files: [{
-            file: '/foo',
-            count: 1,
-          }],
+          files: [
+            {
+              file: '/foo',
+              count: 1,
+            },
+          ],
           originalPattern: 'FOO',
           pattern: /FOO/g,
           renamed: [],
@@ -284,11 +288,10 @@ describe('TokenProcessor', () => {
       });
 
       const tokenProcessor = new TokenProcessor(ct);
-      
+
       await tokenProcessor.prepTokens();
 
-      jest.spyOn(FileHandler, 'replaceInFile')
-      .mockRejectedValueOnce(new Error('foo'));
+      jest.spyOn(FileHandler, 'replaceInFile').mockRejectedValueOnce(new Error('foo'));
 
       await tokenProcessor.processItem('/foo');
 
@@ -331,9 +334,7 @@ describe('TokenProcessor', () => {
 
       const tokenProcessor = new TokenProcessor(ct);
 
-      const mockRename = jest.spyOn(tokenProcessor, 'rename')
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined);
+      const mockRename = jest.spyOn(tokenProcessor, 'rename').mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined);
 
       await tokenProcessor.renameItems('/foo', ['bar', 'baz']);
 
@@ -387,16 +388,18 @@ describe('TokenProcessor', () => {
       ct.state.process.tokenMap = {
         '/foo/g': {
           count: 1,
-          files: [{
-            file: '/foo',
-            count: 1,
-          }],
+          files: [
+            {
+              file: '/foo',
+              count: 1,
+            },
+          ],
           originalPattern: 'foo',
           pattern: /foo/g,
           renamed: [],
           replacement: 'bar',
           overwrite: false,
-        }
+        },
       };
 
       const tokenProcessor = new TokenProcessor(ct);
@@ -407,10 +410,7 @@ describe('TokenProcessor', () => {
 
       await tokenProcessor.rename('/foo', 'foo');
 
-      expect(ct.logger.logOutput).toEqual([
-        'Rename Conflict: foo -> bar in folder /foo',
-        '  Skipping rename of foo to bar in folder /foo',
-      ]);
+      expect(ct.logger.logOutput).toEqual(['Rename Conflict: foo -> bar in folder /foo', '  Skipping rename of foo to bar in folder /foo']);
     });
 
     it('should overwrite conflicts if overwrite is true', async () => {
@@ -425,16 +425,18 @@ describe('TokenProcessor', () => {
       ct.state.process.tokenMap = {
         '/foo/g': {
           count: 1,
-          files: [{
-            file: '/foo',
-            count: 1,
-          }],
+          files: [
+            {
+              file: '/foo',
+              count: 1,
+            },
+          ],
           originalPattern: 'foo',
           pattern: /foo/g,
           renamed: [],
           replacement: 'bar',
           overwrite: true,
-        }
+        },
       };
 
       const tokenProcessor = new TokenProcessor(ct);
@@ -446,10 +448,7 @@ describe('TokenProcessor', () => {
 
       await tokenProcessor.rename('/foo', 'foo');
 
-      expect(ct.logger.logOutput).toEqual([
-        'Rename Conflict: foo -> bar in folder /foo',
-        '  Deleting foo and replacing with bar',
-      ]);
+      expect(ct.logger.logOutput).toEqual(['Rename Conflict: foo -> bar in folder /foo', '  Deleting foo and replacing with bar']);
     });
 
     it('should call replace for each item', async () => {
@@ -464,16 +463,18 @@ describe('TokenProcessor', () => {
       ct.state.process.tokenMap = {
         '/foo/g': {
           count: 1,
-          files: [{
-            file: '/foo',
-            count: 1,
-          }],
+          files: [
+            {
+              file: '/foo',
+              count: 1,
+            },
+          ],
           originalPattern: 'foo',
           pattern: /foo/g,
           renamed: [],
           replacement: 'bar',
           overwrite: undefined,
-        }
+        },
       };
 
       const tokenProcessor = new TokenProcessor(ct);
@@ -484,9 +485,7 @@ describe('TokenProcessor', () => {
 
       await tokenProcessor.rename('/foo', 'foo');
 
-      expect(ct.logger.logOutput).toEqual([
-        'Renaming file /foo/foo to /foo/bar',
-      ]);
+      expect(ct.logger.logOutput).toEqual(['Renaming file /foo/foo to /foo/bar']);
 
       expect(mockRename).toHaveBeenCalledWith('/foo/foo', '/foo/bar');
     });
@@ -499,10 +498,12 @@ describe('TokenProcessor', () => {
         logger: jest.fn(),
       });
 
-      ct.state.process.variables = [{
-        name: 'VARIABLE',
-        value: 'bar',
-      }];
+      ct.state.process.variables = [
+        {
+          name: 'VARIABLE',
+          value: 'bar',
+        },
+      ];
 
       const tokenProcessor = new TokenProcessor(ct);
 
@@ -511,10 +512,12 @@ describe('TokenProcessor', () => {
         pattern: /foo/g,
         replacement: '$VARIABLE',
         count: 1,
-        files: [{
-          file: '/foo',
-          count: 1,
-        }],
+        files: [
+          {
+            file: '/foo',
+            count: 1,
+          },
+        ],
         renamed: [],
         overwrite: true,
       };
@@ -556,7 +559,7 @@ describe('TokenProcessor', () => {
 
   describe('convertStringToToken', () => {
     it('should convert string to Regexp and escape special characters', () => {
-      const result = TokenProcessor.convertStringToToken('foo-/\\^$*+?.()|[\]{}');
+      const result = TokenProcessor.convertStringToToken('foo-/\\^$*+?.()|[]{}');
       expect(result).toEqual(/foo\-\/\\\^\$\*\+\?\.\(\)\|\[\]\{\}/g);
     });
   });

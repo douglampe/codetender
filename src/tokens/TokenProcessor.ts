@@ -142,6 +142,7 @@ export class TokenProcessor {
   async rename(folder: string, item: string) {
     const oldFile = path.join(folder, item);
     const oldItem = item;
+    let newItem = item;
     const tokens: Array<TokenMapItem> = [];
 
     if (this.ct.state.output.notReplacedFiles[oldFile]) {
@@ -151,43 +152,43 @@ export class TokenProcessor {
 
     Object.keys(this.ct.state.process.tokenMap).forEach((key) => {
       const token = this.ct.state.process.tokenMap[key];
-      if (item.match(token.pattern!)) {
-        item = item.replace(token.pattern!, token.replacement);
+      if (newItem.match(token.pattern!)) {
+        newItem = newItem.replace(token.pattern!, token.replacement);
         tokens.push(token);
       }
     });
 
-    const newFile = path.join(folder, item);
-
-    if (newFile === oldFile) {
+    if (newItem === oldItem) {
       return;
     }
+
+    const newFile = path.join(folder, newItem);
 
     tokens.forEach((t) => {
       t.renamed.push({
         old: oldItem,
-        new: item,
+        new: newItem,
       });
     });
 
     // Handle conflicts
     if (await FileHandler.exists(newFile)) {
-      this.ct.logger.verboseLog('Rename Conflict: ' + oldItem + ' -> ' + item + ' in folder ' + folder);
+      this.ct.logger.verboseLog(`Rename Conflict: ${oldItem} -> ${newItem} in folder ${folder}`);
 
       // If token is flagged as overwrite, delete and rename. Otherwise skip.
       if (tokens.find((t) => t.overwrite)) {
-        this.ct.logger.verboseLog('  Deleting ' + oldItem + ' and replacing with ' + item);
+        this.ct.logger.verboseLog('  Deleting ' + oldItem + ' and replacing with ' + newItem);
         await fs.promises.unlink(newFile);
         await fs.promises.rename(oldFile, newFile);
         return;
       }
 
-      this.ct.logger.verboseLog('  Skipping rename of ' + oldItem + ' to ' + item + ' in folder ' + folder);
+      this.ct.logger.verboseLog('  Skipping rename of ' + oldItem + ' to ' + newItem + ' in folder ' + folder);
       this.ct.state.output.errors.push({
         type: 'Rename Conflict',
         folder,
         old: oldItem,
-        new: item,
+        new: newItem,
       });
 
       return;

@@ -27,7 +27,7 @@ describe('CodeTenderCLI', () => {
     process.argv = oldArgv;
     jest.resetAllMocks();
   });
-  
+
   CodeTenderCLI.log = jest.fn();
 
   it('should display help', async () => {

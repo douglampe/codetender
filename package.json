@@ -27,6 +27,7 @@
     "test": "jest --config jest.json  --runInBand --coverage --detectOpenHandles",
     "test:nocover": "jest --config jest.json --detectOpenHandles",
     "test:one": "jest --detectOpenHandles",
+    "test:end-to-end": "jest --config jest-e2e.json  --runInBand --detectOpenHandles",
     "prepare": "husky install"
   },
   "jest": {

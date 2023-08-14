@@ -1,4 +1,4 @@
 export interface ScriptsConfig {
-  before?: string;
-  after?: string;
+  before?: string | string[];
+  after?: string | string[];
 }

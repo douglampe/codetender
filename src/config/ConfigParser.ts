@@ -51,7 +51,7 @@ export class ConfigParser {
 
     this.configPaths.push(file);
     const fileConfig = JSON.parse(data);
-    
+
     if (fileConfig.remote && fileConfig.remote.find((r: RemoteTemplateConfig) => r.dest !== '/' && r.dest.match(/[\\/]/g))) {
       throw new Error('Configuration Error: Remote destinations must be one level down from the root.');
     }
@@ -85,7 +85,7 @@ export class ConfigParser {
 
     // Merge variables
     if (fileConfig.variables) {
-      this.ct.state.process.variables = this.ct.state.process.variables.concat(fileConfig.variables);
+      this.ct.state.process.variables.push(...fileConfig.variables);
     }
 
     // Merge tokens
@@ -103,37 +103,49 @@ export class ConfigParser {
     // Merge scripts
     if (fileConfig.scripts) {
       if (fileConfig.scripts.before) {
-        this.ct.state.process.scripts.before = fileConfig.scripts.before;
+        if (typeof fileConfig.scripts.before === 'string') {
+          this.ct.state.process.scripts.before.push(fileConfig.scripts.before);
+        } else {
+          this.ct.state.process.scripts.before.push(...fileConfig.scripts.before);
+        }
       }
 
       if (fileConfig.scripts.after) {
-        this.ct.state.process.scripts.after = fileConfig.scripts.after;
+        if (typeof fileConfig.scripts.after === 'string') {
+          this.ct.state.process.scripts.after.push(fileConfig.scripts.after);
+        } else {
+          this.ct.state.process.scripts.after.push(...fileConfig.scripts.after);
+        }
       }
     }
 
     // Append remote
     if (fileConfig.remote) {
-      this.ct.state.source.remote = this.ct.state.source.remote.concat(fileConfig.remote);
+      this.ct.state.source.remote.push(...fileConfig.remote);
     }
 
     // Append noReplace
     if (fileConfig.noReplace) {
-      this.ct.state.process.noReplace = this.ct.state.process.noReplace.concat(fileConfig.noReplace);
+      this.ct.state.process.noReplace.push(...fileConfig.noReplace);
     }
 
     // Append ignore
     if (fileConfig.ignore) {
-      this.ct.state.process.ignore = this.ct.state.process.ignore.concat(fileConfig.ignore);
+      this.ct.state.process.ignore.push(...fileConfig.ignore);
     }
 
     // Append delete
     if (fileConfig.delete) {
-      this.ct.state.process.delete = this.ct.state.process.delete.concat(fileConfig.delete);
+      this.ct.state.process.delete.push(...fileConfig.delete);
     }
 
     // Append banner
     if (fileConfig.banner) {
-      this.ct.state.process.banner = this.ct.state.process.banner.concat(fileConfig.banner);
+      if (typeof fileConfig.banner === 'string') {
+        this.ct.state.process.banner.push(fileConfig.banner);
+      } else {
+        this.ct.state.process.banner.push(...fileConfig.banner);
+      }
     }
   }
 }

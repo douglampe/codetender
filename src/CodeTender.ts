@@ -3,16 +3,7 @@ import pkgInfo from '../package.json';
 
 import cp from 'child_process';
 
-import { 
-  CodeTenderConfig,
-  CodeTenderState,
-  ConfigParser,
-  FileHandler,
-  InputHandler,
-  Logger,
-  TokenProcessor,
-  ScriptHandler,
-} from './index';
+import { CodeTenderConfig, CodeTenderState, ConfigParser, FileHandler, InputHandler, Logger, TokenProcessor, ScriptHandler } from './index';
 
 const REMOTE_ROOT = '__CT_REMOTE_ROOT__';
 const SCHEMA_VERSION = '1.1.0';
@@ -56,6 +47,8 @@ export class CodeTender {
         ignore: [],
         noReplace: [],
         scripts: {
+          before: [],
+          after: [],
         },
         delete: [],
         tokenMap: {},
@@ -67,19 +60,36 @@ export class CodeTender {
     };
 
     if (config.tokens) {
-      this.state.process.tokens = this.state.process.tokens.concat(config.tokens);
+      this.state.process.tokens.push(...config.tokens);
+    }
+
+    if (config.scripts) {
+      if (config.scripts.before) {
+        if (typeof config.scripts.before === 'string') {
+          this.state.process.scripts.before.push(config.scripts.before);
+        } else {
+          this.state.process.scripts.before.push(...config.scripts.before);
+        }
+      }
+      if (config.scripts.after) {
+        if (typeof config.scripts.after === 'string') {
+          this.state.process.scripts.after.push(config.scripts.after);
+        } else {
+          this.state.process.scripts.after.push(...config.scripts.after);
+        }
+      }
     }
 
     if (config.variables) {
-      this.state.process.variables = this.state.process.variables.concat(config.variables);
+      this.state.process.variables.push(...config.variables);
     }
 
     if (config.ignore) {
-      this.state.process.ignore = this.state.process.ignore.concat(config.ignore);
+      this.state.process.ignore.push(...config.ignore);
     }
 
     if (config.noReplace) {
-      this.state.process.noReplace = this.state.process.noReplace.concat(config.noReplace);
+      this.state.process.noReplace.push(...config.noReplace);
     }
 
     // Always ignore .git folder
@@ -103,7 +113,7 @@ export class CodeTender {
     // Add root folder as variable
     this.state.process.variables.push({
       name: 'CODETENDER_ROOT',
-      value: this.state.target.folder,
+      value: path.basename(this.state.target.folder),
     });
 
     this.logger = new Logger(this);
@@ -118,9 +128,9 @@ export class CodeTender {
     if (await FileHandler.dirExists(this.state.target.folder)) {
       this.logger.log(
         'Folder ' +
-        this.state.target.folder +
-        " already exists. Please specify a valid name for a new folder or use 'codetender replace' to replace tokens in existing files.",
-        );
+          this.state.target.folder +
+          " already exists. Please specify a valid name for a new folder or use 'codetender replace' to replace tokens in existing files.",
+      );
       throw new Error('Folder ' + this.config.folder + ' already exists.');
     }
 
@@ -139,12 +149,12 @@ export class CodeTender {
         await this.processRemoteTemplates();
       }
       await this.fileHandler.cleanupIgnored();
-      
+
       if (!(await this.inputHandler.getTokens())) {
         this.logger.verboseLog('Abort requested. Exiting...');
         return;
       }
-      
+
       await this.tokenProcessor.prepTokens();
       await this.tokenProcessor.prepNoReplace();
       await this.scriptHandler.runBeforeScript();
@@ -166,12 +176,10 @@ export class CodeTender {
     this.state.process.processPath = this.state.target.targetPath;
 
     if (!(await FileHandler.dirExists(this.state.target.targetPath))) {
-      this.logger.log(
-        `Folder ${this.config.folder} does not exist. Please specify a valid folder or use 'codetender new' to copy and process a template.`
-      );
+      this.logger.log(`Folder ${this.config.folder} does not exist. Please specify a valid folder or use 'codetender new' to copy and process a template.`);
       throw new Error(`Folder ${this.config.folder} does not exist.`);
     }
-    
+
     try {
       this.logger.splash('Replacing in place...');
       await this.configParser.readFileConfig();
@@ -193,8 +201,12 @@ export class CodeTender {
   }
 
   public async add() {
-    if(!await FileHandler.dirExists(this.state.target.targetPath)) {
-      this.logger.log('Folder ' + this.state.target.folder + ' does not exist. Please specify a valid name for an existing folder or use \'codetender new\' to create a folder from a template.');
+    if (!(await FileHandler.dirExists(this.state.target.targetPath))) {
+      this.logger.log(
+        'Folder ' +
+          this.state.target.folder +
+          " does not exist. Please specify a valid name for an existing folder or use 'codetender new' to create a folder from a template.",
+      );
       throw new Error('Folder ' + this.state.target.folder + ' does not exist.');
     }
 
@@ -203,7 +215,7 @@ export class CodeTender {
 
   public async copyOrClone() {
     this.logger.verboseLog('Copying or cloning template...');
-    
+
     if (await FileHandler.dirExists(this.state.source.template!)) {
       this.logger.verboseLog('Template is local');
       this.state.source.isLocalTemplate = true;

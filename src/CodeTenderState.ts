@@ -1,11 +1,4 @@
-import { 
-  CodeTenderConfig, 
-  CodeTenderError,
-  RemoteTemplateConfig, 
-  Token,
-  TokenMapItem,
-  Variable,
- } from './index';
+import { CodeTenderConfig, CodeTenderError, RemoteTemplateConfig, Token, TokenMapItem, Variable } from './index';
 
 export interface CodeTenderState {
   config: {
@@ -33,8 +26,8 @@ export interface CodeTenderState {
     ignore: Array<string>;
     noReplace: Array<string>;
     scripts: {
-      before?: string | Array<string>;
-      after?: string | Array<string>;
+      before: Array<string>;
+      after: Array<string>;
     };
     delete: Array<string>;
     tokenMap: Record<string, TokenMapItem>;

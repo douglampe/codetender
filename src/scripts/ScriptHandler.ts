@@ -9,10 +9,12 @@ export class ScriptHandler {
 
   // Run the before script if it exists
   async runBeforeScript() {
-    if (this.ct.config.scripts && this.ct.config.scripts.before) {
+    if (this.ct.state.process.scripts.before.length > 0) {
       this.ct.logger.verboseLog('Running before script...');
 
-      await this.ct.runChildProcess(this.ct.config.scripts.before, this.ct.state.source.sourcePath);
+      await Promise.all(this.ct.state.process.scripts.before.map((s) => this.ct.runChildProcess(s, this.ct.state.process.processPath)));
+
+      return;
     }
 
     this.ct.logger.verboseLog('No before script found.');
@@ -20,10 +22,11 @@ export class ScriptHandler {
 
   // Run the after script if present
   async runAfterScript() {
-    if (this.ct.config.scripts?.after) {
+    if (this.ct.state.process.scripts.after.length > 0) {
       this.ct.logger.verboseLog('Running after script...');
 
-      await this.ct.runChildProcess(this.ct.config.scripts.after, this.ct.state.source.sourcePath);
+      await Promise.all(this.ct.state.process.scripts.after.map((s) => this.ct.runChildProcess(s, this.ct.state.process.processPath)));
+      return;
     } else {
       this.ct.logger.verboseLog('No after script found.');
     }

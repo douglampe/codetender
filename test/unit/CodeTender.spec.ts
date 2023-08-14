@@ -4,7 +4,7 @@ import cp, { ChildProcess, ExecOptions, ExecException } from 'child_process';
 import pkgInfo from '../../package.json';
 import { testReaderFactory } from '../Util';
 
-describe('CodeTender', () => {  
+describe('CodeTender', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -48,7 +48,10 @@ describe('CodeTender', () => {
           ],
           ignore: ['**/.git/', '.codetender'],
           noReplace: ['**/.git/', '.codetender'],
-          scripts: {},
+          scripts: {
+            before: [],
+            after: [],
+          },
           delete: [],
           tokenMap: {},
         },
@@ -69,7 +72,7 @@ describe('CodeTender', () => {
         folder: 'folder',
         noReplace: ['do-not-replace'],
         ignore: ['ignore'],
-        variables: [{ name: 'foo', value: 'bar'}],
+        variables: [{ name: 'foo', value: 'bar' }],
         tokens: [],
         logger: mockLogger,
       });
@@ -82,7 +85,7 @@ describe('CodeTender', () => {
             folder: 'folder',
             noReplace: ['do-not-replace'],
             ignore: ['ignore'],
-            variables: [{ name: 'foo', value: 'bar'}],
+            variables: [{ name: 'foo', value: 'bar' }],
             tokens: [],
             logger: mockLogger,
           },
@@ -115,7 +118,10 @@ describe('CodeTender', () => {
           ],
           ignore: ['ignore', '**/.git/', '.codetender'],
           noReplace: ['do-not-replace', '**/.git/', '.codetender'],
-          scripts: {},
+          scripts: {
+            before: [],
+            after: [],
+          },
           delete: [],
           tokenMap: {},
         },
@@ -134,20 +140,20 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValue(true);
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
       jest.spyOn(FileHandler, 'ensurePathExists').mockResolvedValue(undefined);
-      
+
       const mockCopy = jest.spyOn(FileHandler, 'copy').mockResolvedValue(undefined);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
-        template: 'bar', 
-        logger: jest.fn(), 
-        verbose: true, 
+
+      const ct = new CodeTender({
+        folder: 'foo',
+        template: 'bar',
+        logger: jest.fn(),
+        verbose: true,
       });
 
       ct.state.source.sourcePath = '/temp/folder';
 
       await ct.copyOrClone();
-    
+
       expect(ct.state.source.isLocalTemplate).toBeTruthy();
       expect(ct.logger.logOutput).toEqual([
         'Copying or cloning template...',
@@ -162,18 +168,18 @@ describe('CodeTender', () => {
     it('should clone if template path does not exist', async () => {
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValue(false);
       const mockLog = jest.fn();
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
-        template: 'bar', 
-        logger: mockLog, 
-        verbose: true, 
+
+      const ct = new CodeTender({
+        folder: 'foo',
+        template: 'bar',
+        logger: mockLog,
+        verbose: true,
       });
 
       ct.state.source.sourcePath = '/temp/folder';
-      
+
       jest.spyOn(ct, 'runChildProcess').mockResolvedValue(undefined);
-      
+
       await ct.copyOrClone();
 
       expect(ct.logger.logOutput).toEqual([
@@ -191,8 +197,8 @@ describe('CodeTender', () => {
       const ct = new CodeTender({
         folder: 'foo',
         remote: [
-          { src: 'foo', dest:'/', tokens: [] },
-          { src: 'bar', dest:'/', tokens: [] },
+          { src: 'foo', dest: '/', tokens: [] },
+          { src: 'bar', dest: '/', tokens: [] },
         ],
         logger: jest.fn(),
       });
@@ -200,18 +206,18 @@ describe('CodeTender', () => {
       await expect(ct.cloneRemoteTemplates()).rejects.toEqual(new Error('More than one remote root template was specified. Aborting.'));
     });
 
-    it('should call gitClone for each remote and return true', async() => {
+    it('should call gitClone for each remote and return true', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         remote: [
-          { src: 'foo', dest:'/', tokens: [] },
-          { src: 'bar', dest:'/bar', tokens: [] },
+          { src: 'foo', dest: '/', tokens: [] },
+          { src: 'bar', dest: '/bar', tokens: [] },
         ],
         logger: jest.fn(),
       });
       const mockClone = jest.spyOn(ct, 'gitClone').mockResolvedValue(undefined);
       ct.state.process.processPath = '/process';
-      ct.state.source.sourcePath = '/source'
+      ct.state.source.sourcePath = '/source';
 
       const result = await ct.cloneRemoteTemplates();
 
@@ -221,7 +227,7 @@ describe('CodeTender', () => {
       expect(result).toBeTruthy();
     });
 
-    it('should log and return false if no remotes found', async() => {
+    it('should log and return false if no remotes found', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         logger: jest.fn(),
@@ -262,19 +268,20 @@ describe('CodeTender', () => {
       });
 
       const mockExec = jest.fn();
-      jest.spyOn(cp, 'exec')
-      .mockImplementation(function(
-        this: ChildProcess,
-        command: string,
-        options: any,
-        callback?: (error: ExecException | null, stdout: string, stderr: string) => void
-      ): ChildProcess {
-        mockExec(command);
-        if (callback) {
-          callback(null, '', '');
-        }
-        return this;
-      });
+      jest
+        .spyOn(cp, 'exec')
+        .mockImplementation(function (
+          this: ChildProcess,
+          command: string,
+          options: any,
+          callback?: (error: ExecException | null, stdout: string, stderr: string) => void,
+        ): ChildProcess {
+          mockExec(command);
+          if (callback) {
+            callback(null, '', '');
+          }
+          return this;
+        });
 
       await ct.runChildProcess('foo', '.');
     });
@@ -287,19 +294,20 @@ describe('CodeTender', () => {
       });
 
       const mockExec = jest.fn();
-      jest.spyOn(cp, 'exec')
-      .mockImplementation(function(
-        this: ChildProcess,
-        command: string,
-        options: any,
-        callback?: (error: ExecException | null, stdout: string, stderr: string) => void
-      ): ChildProcess {
-        mockExec(command);
-        if (callback) {
-          callback(new Error('foo'), '', '');
-        }
-        return this;
-      });
+      jest
+        .spyOn(cp, 'exec')
+        .mockImplementation(function (
+          this: ChildProcess,
+          command: string,
+          options: any,
+          callback?: (error: ExecException | null, stdout: string, stderr: string) => void,
+        ): ChildProcess {
+          mockExec(command);
+          if (callback) {
+            callback(new Error('foo'), '', '');
+          }
+          return this;
+        });
 
       await expect(ct.runChildProcess('foo', '.')).rejects.toEqual(new Error('foo'));
     });
@@ -307,7 +315,6 @@ describe('CodeTender', () => {
 
   describe('getVersion()', () => {
     it('should return the package version', async () => {
-      
       expect(CodeTender.getVersion()).toEqual(pkgInfo.version);
     });
   });
@@ -316,7 +323,7 @@ describe('CodeTender', () => {
     it('should throw error if folder does not exist', async () => {
       const mockLogger = jest.fn();
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValueOnce(false);
-      
+
       const ct = new CodeTender({
         folder: 'foo',
         logger: mockLogger,
@@ -327,23 +334,25 @@ describe('CodeTender', () => {
 
     it('should catch, log, and rethrow errors', async () => {
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValueOnce(true);
-      
+
       const ct = new CodeTender({
         folder: 'foo',
         logger: jest.fn(),
       });
-      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => { throw new Error('Forced error'); });
+      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => {
+        throw new Error('Forced error');
+      });
 
       await expect(ct.replace()).rejects.toBeTruthy();
 
       expect(ct.logger.logOutput).toEqual([
         '                          __',
-      '  ____  ____  ____  _____/ /',
-      ' / __ \\/ __ \\/ __ \\/ ___/ /',
-      '/ /_/ / /_/ / /_/ (__  )_/',
-      '\\____/\\____/ .___/____(_)',
-      '          /_/ ',
-      'Forced error',
+        '  ____  ____  ____  _____/ /',
+        ' / __ \\/ __ \\/ __ \\/ ___/ /',
+        '/ /_/ / /_/ / /_/ (__  )_/',
+        '\\____/\\____/ .___/____(_)',
+        '          /_/ ',
+        'Forced error',
       ]);
     });
 
@@ -356,9 +365,9 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
 
       const mockResolve = jest.spyOn(FileHandler, 'resolve');
-      const mockDirExists = jest.spyOn(FileHandler, 'dirExists')
-      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp')
-      const mockReadFile = jest.spyOn(fs.promises, 'readFile')
+      const mockDirExists = jest.spyOn(FileHandler, 'dirExists');
+      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp');
+      const mockReadFile = jest.spyOn(fs.promises, 'readFile');
       const mockExists = jest.spyOn(FileHandler, 'exists');
 
       // Resolve temp path
@@ -372,27 +381,27 @@ describe('CodeTender', () => {
 
       // Set temp folder to /temp:
       mockMkdtemp.mockResolvedValueOnce('/temp');
-      
+
       // Return true for check if local template exists:
       mockDirExists.mockResolvedValueOnce(true);
 
       // Return true for check if config file exists:
       mockExists.mockResolvedValueOnce(true);
-      
+
       // Return contents of .codetender:
       mockReadFile.mockResolvedValueOnce('{ "version": "1.1" }');
 
       // Return true for check if temp folder exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
+
+      const ct = new CodeTender({
+        folder: 'foo',
         template: 'bar',
         ignore: ['ignored*'],
         noReplace: ['noReplace*'],
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({'  Token to replace [done]: ': ''}),
+        readerFactory: testReaderFactory({ '  Token to replace [done]: ': '' }),
       });
 
       // Always succeed when running child process:
@@ -433,23 +442,25 @@ describe('CodeTender', () => {
 
     it('should catch, log, and rethrow errors', async () => {
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValueOnce(false);
-      
+
       const ct = new CodeTender({
         folder: 'foo',
         logger: jest.fn(),
       });
-      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => { throw new Error('Forced error'); });
+      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => {
+        throw new Error('Forced error');
+      });
 
       await expect(ct.new()).rejects.toBeTruthy();
 
       expect(ct.logger.logOutput).toEqual([
         '                          __',
-      '  ____  ____  ____  _____/ /',
-      ' / __ \\/ __ \\/ __ \\/ ___/ /',
-      '/ /_/ / /_/ / /_/ (__  )_/',
-      '\\____/\\____/ .___/____(_)',
-      '          /_/ ',
-      'Forced error',
+        '  ____  ____  ____  _____/ /',
+        ' / __ \\/ __ \\/ __ \\/ ___/ /',
+        '/ /_/ / /_/ / /_/ (__  )_/',
+        '\\____/\\____/ .___/____(_)',
+        '          /_/ ',
+        'Forced error',
       ]);
     });
 
@@ -462,9 +473,9 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
 
       const mockResolve = jest.spyOn(FileHandler, 'resolve');
-      const mockDirExists = jest.spyOn(FileHandler, 'dirExists')
-      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp')
-      const mockReadFile = jest.spyOn(fs.promises, 'readFile')
+      const mockDirExists = jest.spyOn(FileHandler, 'dirExists');
+      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp');
+      const mockReadFile = jest.spyOn(fs.promises, 'readFile');
       const mockExists = jest.spyOn(FileHandler, 'exists');
 
       // Resolve temp path
@@ -478,27 +489,27 @@ describe('CodeTender', () => {
 
       // Set temp folder to /temp:
       mockMkdtemp.mockResolvedValueOnce('/temp');
-      
+
       // Return true for check if local template exists:
       mockDirExists.mockResolvedValueOnce(true);
 
       // Return true for check if config file exists:
       mockExists.mockResolvedValueOnce(true);
-      
+
       // Return contents of .codetender:
       mockReadFile.mockResolvedValueOnce('{ "version": "1.1" }');
 
       // Return true for check if temp folder exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
+
+      const ct = new CodeTender({
+        folder: 'foo',
         template: 'bar',
         ignore: ['ignored*'],
         noReplace: ['noReplace*'],
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({'  Token to replace [done]: ': ''}),
+        readerFactory: testReaderFactory({ '  Token to replace [done]: ': '' }),
       });
 
       // Always succeed when running child process:
@@ -521,7 +532,7 @@ describe('CodeTender', () => {
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
-        'Successfully copied template from \'bar\' to \'foo\'.',
+        "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
         'Code version: 1.1.0',
@@ -529,6 +540,8 @@ describe('CodeTender', () => {
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/**/.git/',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/.codetender',
         'Reading tokens from command line...',
         '',
         'Abort requested. Exiting...',
@@ -546,9 +559,9 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
 
       const mockResolve = jest.spyOn(FileHandler, 'resolve');
-      const mockDirExists = jest.spyOn(FileHandler, 'dirExists')
-      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp')
-      const mockReadFile = jest.spyOn(fs.promises, 'readFile')
+      const mockDirExists = jest.spyOn(FileHandler, 'dirExists');
+      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp');
+      const mockReadFile = jest.spyOn(fs.promises, 'readFile');
       const mockExists = jest.spyOn(FileHandler, 'exists');
       const mockReaddir = jest.spyOn(fs.promises, 'readdir');
 
@@ -563,13 +576,13 @@ describe('CodeTender', () => {
 
       // Set temp folder to /temp:
       mockMkdtemp.mockResolvedValueOnce('/temp');
-      
+
       // Return true for check if local template exists:
       mockDirExists.mockResolvedValueOnce(true);
 
       // Return true for check if config file exists:
       mockExists.mockResolvedValueOnce(true);
-      
+
       // Return contents of .codetender:
       mockReadFile.mockResolvedValueOnce('{ "version": "1.1" }');
 
@@ -581,29 +594,27 @@ describe('CodeTender', () => {
 
       // Return true for check if remote template local copy exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
+
       // Return empty result when replacing remote tokens:
       mockReaddir.mockResolvedValueOnce([]);
-      
+
       // Return empty result when replacing tokens:
       mockReaddir.mockResolvedValueOnce([]);
 
       // Return true for check if temp folder exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
+
+      const ct = new CodeTender({
+        folder: 'foo',
         template: 'bar',
-        remote: [
-          { src: 'foo/bar', dest: '/', tokens: [ { pattern: 'foo', replacement: 'bar' }]},
-        ],
+        remote: [{ src: 'foo/bar', dest: '/', tokens: [{ pattern: 'foo', replacement: 'bar' }] }],
         tokens: [{ pattern: 'foo', prompt: 'Replace foo with:' }],
         ignore: ['ignored*'],
         noReplace: ['noReplace*'],
         file: 'config.json',
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({'  Replace foo with:': 'bar'}),
+        readerFactory: testReaderFactory({ '  Replace foo with:': 'bar' }),
       });
 
       // Always succeed when running child process:
@@ -624,7 +635,7 @@ describe('CodeTender', () => {
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
-        'Successfully copied template from \'bar\' to \'foo\'.',
+        "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
         'Code version: 1.1.0',
@@ -641,6 +652,8 @@ describe('CodeTender', () => {
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/**/.git/',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/.codetender',
         'Reading token values from command line...',
         '',
         'Enter a blank value at any time to abort.',
@@ -689,23 +702,25 @@ describe('CodeTender', () => {
 
     it('should catch, log, and rethrow errors', async () => {
       jest.spyOn(FileHandler, 'dirExists').mockResolvedValueOnce(true);
-      
+
       const ct = new CodeTender({
         folder: 'foo',
         logger: jest.fn(),
       });
-      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => { throw new Error('Forced error'); });
+      jest.spyOn(ct.logger, 'splash').mockImplementationOnce(() => {
+        throw new Error('Forced error');
+      });
 
       await expect(ct.add()).rejects.toBeTruthy();
 
       expect(ct.logger.logOutput).toEqual([
         '                          __',
-      '  ____  ____  ____  _____/ /',
-      ' / __ \\/ __ \\/ __ \\/ ___/ /',
-      '/ /_/ / /_/ / /_/ (__  )_/',
-      '\\____/\\____/ .___/____(_)',
-      '          /_/ ',
-      'Forced error',
+        '  ____  ____  ____  _____/ /',
+        ' / __ \\/ __ \\/ __ \\/ ___/ /',
+        '/ /_/ / /_/ / /_/ (__  )_/',
+        '\\____/\\____/ .___/____(_)',
+        '          /_/ ',
+        'Forced error',
       ]);
     });
 
@@ -718,9 +733,9 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
 
       const mockResolve = jest.spyOn(FileHandler, 'resolve');
-      const mockDirExists = jest.spyOn(FileHandler, 'dirExists')
-      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp')
-      const mockReadFile = jest.spyOn(fs.promises, 'readFile')
+      const mockDirExists = jest.spyOn(FileHandler, 'dirExists');
+      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp');
+      const mockReadFile = jest.spyOn(fs.promises, 'readFile');
       const mockExists = jest.spyOn(FileHandler, 'exists');
 
       // Resolve temp path
@@ -734,27 +749,27 @@ describe('CodeTender', () => {
 
       // Set temp folder to /temp:
       mockMkdtemp.mockResolvedValueOnce('/temp');
-      
+
       // Return true for check if local template exists:
       mockDirExists.mockResolvedValueOnce(true);
 
       // Return true for check if config file exists:
       mockExists.mockResolvedValueOnce(true);
-      
+
       // Return contents of .codetender:
       mockReadFile.mockResolvedValueOnce('{ "version": "1.1" }');
 
       // Return true for check if temp folder exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
+
+      const ct = new CodeTender({
+        folder: 'foo',
         template: 'bar',
         ignore: ['ignored*'],
         noReplace: ['noReplace*'],
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({'  Token to replace [done]: ': ''}),
+        readerFactory: testReaderFactory({ '  Token to replace [done]: ': '' }),
       });
 
       // Always succeed when running child process:
@@ -777,7 +792,7 @@ describe('CodeTender', () => {
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
-        'Successfully copied template from \'bar\' to \'foo\'.',
+        "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
         'Code version: 1.1.0',
@@ -785,6 +800,8 @@ describe('CodeTender', () => {
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/**/.git/',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/.codetender',
         'Reading tokens from command line...',
         '',
         'Abort requested. Exiting...',
@@ -802,9 +819,9 @@ describe('CodeTender', () => {
       jest.spyOn(FileHandler, 'remove').mockResolvedValue(true);
 
       const mockResolve = jest.spyOn(FileHandler, 'resolve');
-      const mockDirExists = jest.spyOn(FileHandler, 'dirExists')
-      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp')
-      const mockReadFile = jest.spyOn(fs.promises, 'readFile')
+      const mockDirExists = jest.spyOn(FileHandler, 'dirExists');
+      const mockMkdtemp = jest.spyOn(fs.promises, 'mkdtemp');
+      const mockReadFile = jest.spyOn(fs.promises, 'readFile');
       const mockExists = jest.spyOn(FileHandler, 'exists');
       const mockReaddir = jest.spyOn(fs.promises, 'readdir');
 
@@ -819,13 +836,13 @@ describe('CodeTender', () => {
 
       // Set temp folder to /temp:
       mockMkdtemp.mockResolvedValueOnce('/temp');
-      
+
       // Return true for check if local template exists:
       mockDirExists.mockResolvedValueOnce(true);
 
       // Return true for check if config file exists:
       mockExists.mockResolvedValueOnce(true);
-      
+
       // Return contents of .codetender:
       mockReadFile.mockResolvedValueOnce('{ "version": "1.1" }');
 
@@ -837,29 +854,27 @@ describe('CodeTender', () => {
 
       // Return true for check if remote template local copy exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
+
       // Return empty result when replacing remote tokens:
       mockReaddir.mockResolvedValueOnce([]);
-      
+
       // Return empty result when replacing tokens:
       mockReaddir.mockResolvedValueOnce([]);
 
       // Return true for check if temp folder exists:
       mockDirExists.mockResolvedValueOnce(true);
-      
-      const ct = new CodeTender({ 
-        folder: 'foo', 
+
+      const ct = new CodeTender({
+        folder: 'foo',
         template: 'bar',
-        remote: [
-          { src: 'foo/bar', dest: '/', tokens: [ { pattern: 'foo', replacement: 'bar' }]},
-        ],
+        remote: [{ src: 'foo/bar', dest: '/', tokens: [{ pattern: 'foo', replacement: 'bar' }] }],
         tokens: [{ pattern: 'foo', prompt: 'Replace foo with:' }],
         ignore: ['ignored*'],
         noReplace: ['noReplace*'],
         file: 'config.json',
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({'  Replace foo with:': 'bar'}),
+        readerFactory: testReaderFactory({ '  Replace foo with:': 'bar' }),
       });
 
       // Always succeed when running child process:
@@ -880,7 +895,7 @@ describe('CodeTender', () => {
         'Copying from local template folder: bar into temporary folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Creating folder: /temp/__CT_TEMPLATE_ROOT__',
         '  Copying from: bar to: /temp/__CT_TEMPLATE_ROOT__',
-        'Successfully copied template from \'bar\' to \'foo\'.',
+        "Successfully copied template from 'bar' to 'foo'.",
         'Looking for .codetender config...',
         'File version: 1.1.0',
         'Code version: 1.1.0',
@@ -897,6 +912,8 @@ describe('CodeTender', () => {
         'Cleaning up ignored files...',
         'Removing files from cloned repository matching ignore config...',
         '  Removing: /temp/__CT_TEMPLATE_ROOT__/ignored*',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/**/.git/',
+        '  Removing: /temp/__CT_TEMPLATE_ROOT__/.codetender',
         'Reading token values from command line...',
         '',
         'Enter a blank value at any time to abort.',

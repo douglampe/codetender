@@ -28,7 +28,7 @@ export class FileHandler {
     this.ct.logger.verboseLog('Copying from temporary folder ' + this.ct.state.process.tempPath + ' to target folder ' + this.ct.state.target.targetPath);
 
     await this.copyFromFs(this.ct.state.source.sourcePath, this.ct.state.target.targetPath);
-    await FileHandler.remove(this.ct.state.source.sourcePath);
+    await FileHandler.remove(this.ct.state.process.tempPath);
   }
 
   // Copy template from local file system
@@ -37,27 +37,27 @@ export class FileHandler {
     this.ct.logger.verboseLog(`  Creating folder: ${to}`);
     await FileHandler.ensurePathExists(to);
     // Copy from source to destination:
-    this.ct.logger.verboseLog(`  Copying from: ${from} to: ${to}`);
+    this.ct.logger.verboseLog(`  Copying from: ${from} to: ${to} with overwrite ${this.ct.config.overwrite ?? false}`);
 
-    FileHandler.copy(from, to, this.ct.config.overwrite ?? false);
+    await FileHandler.copy(from, to, this.ct.config.overwrite ?? false);
   }
 
   // Clean up ignored files after git clone
-  cleanupIgnored() {
+  async cleanupIgnored() {
     this.ct.logger.verboseLog('Cleaning up ignored files...');
 
-    return this.cleanUpFiles(this.ct.config.ignore!, 'ignore');
+    await this.cleanUpFiles(this.ct.state.process.ignore, 'ignore');
   }
 
-  cleanUpDelete() {
+  async cleanUpDelete() {
     this.ct.logger.verboseLog('Cleaning up deleted files...');
 
-    return this.cleanUpFiles(this.ct.config.delete!, 'delete');
+    await this.cleanUpFiles(this.ct.state.process.delete, 'delete');
   }
 
   // Clean up files matching patterns provided
   async cleanUpFiles(patterns: string[], key: string) {
-    if (!patterns || patterns.length < 1) {
+    if (patterns.length < 1) {
       this.ct.logger.verboseLog('No patterns defined for ' + key + ' config.');
       return;
     }
@@ -76,7 +76,7 @@ export class FileHandler {
       this.ct.logger.verboseLog('Temporary folder not defined. Skipping delete.');
       return;
     }
-    
+
     if (!(await FileHandler.dirExists(this.ct.state.process.tempPath))) {
       this.ct.logger.verboseLog('Temporary folder not found. Skipping delete.');
       return;
@@ -96,14 +96,13 @@ export class FileHandler {
 
   // Asynchronously check if a path exists
   public static async dirExists(path: string) {
-    try { 
+    try {
       const stats = await fs.promises.stat(path);
 
       if (stats) {
         return stats.isDirectory();
       }
-    }
-    catch {}
+    } catch {}
     return false;
   }
 
@@ -145,6 +144,6 @@ export class FileHandler {
   }
 
   public static async remove(path: string): Promise<boolean> {
-    return rimraf(path);    
+    return rimraf(path, { glob: true, preserveRoot: false });
   }
 }

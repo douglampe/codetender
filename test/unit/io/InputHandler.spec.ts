@@ -2,7 +2,7 @@ import readline from 'readline/promises';
 import { CodeTender, InputHandler, Token } from '../../../src/index';
 import { testReaderFactory } from '../../Util';
 
-describe('InputHandler', () => {  
+describe('InputHandler', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -57,7 +57,7 @@ describe('InputHandler', () => {
 
       const mockGetTokensFromPrompts = jest.spyOn(inputHandler, 'getTokensFromPrompts');
       mockGetTokensFromPrompts.mockResolvedValue(true);
-      
+
       await inputHandler.getTokens();
 
       expect(mockGetTokensFromPrompts).toHaveBeenCalled();
@@ -80,15 +80,15 @@ describe('InputHandler', () => {
   });
 
   describe('getTokensFromCommandLine()', () => {
-    it('should call convertStringToToken', async() => {
+    it('should call convertStringToToken', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
         logger: jest.fn(),
       });
-      
+
       const inputHandler = new InputHandler(ct);
-      
+
       const mockAsk = jest.spyOn(inputHandler, 'ask');
       mockAsk.mockResolvedValueOnce('foo');
       mockAsk.mockResolvedValueOnce('bar');
@@ -99,15 +99,15 @@ describe('InputHandler', () => {
       expect(ct.state.process.tokens).toEqual([{ pattern: /foo/g, replacement: 'bar' }]);
     });
 
-    it('should abort on empty replacement', async() => {
+    it('should abort on empty replacement', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
         logger: jest.fn(),
       });
-      
+
       const inputHandler = new InputHandler(ct);
-      
+
       const mockAsk = jest.spyOn(inputHandler, 'ask');
       mockAsk.mockResolvedValueOnce('foo');
       mockAsk.mockResolvedValueOnce('');
@@ -134,11 +134,13 @@ describe('InputHandler', () => {
 
       await inputHandler.getTokensFromPrompts();
 
-      expect(ct.state.process.tokens).toEqual([{
-        pattern: 'foo',
-        prompt: 'What is foo?',
-        replacement: 'bar',
-      }]);
+      expect(ct.state.process.tokens).toEqual([
+        {
+          pattern: 'foo',
+          prompt: 'What is foo?',
+          replacement: 'bar',
+        },
+      ]);
     });
 
     it('should call abort on blank value', async () => {
@@ -163,7 +165,7 @@ describe('InputHandler', () => {
   });
 
   describe('getTokenFromPrompt()', () => {
-    it('should call ask and set replacement', async() => {
+    it('should call ask and set replacement', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
@@ -177,13 +179,13 @@ describe('InputHandler', () => {
       } as Token;
 
       jest.spyOn(inputHandler, 'ask').mockResolvedValueOnce('bar');
-      
+
       await inputHandler.getTokenFromPrompt(token);
 
       expect(token.replacement).toEqual('bar');
     });
 
-    it('should use default prompt', async() => {
+    it('should use default prompt', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
@@ -196,22 +198,22 @@ describe('InputHandler', () => {
       } as Token;
 
       const mockAsk = jest.spyOn(inputHandler, 'ask').mockResolvedValueOnce('bar');
-      
+
       await inputHandler.getTokenFromPrompt(token);
 
       expect(token.replacement).toEqual('bar');
-      
-      expect(mockAsk).toHaveBeenCalledWith('    Replace all instances of \'foo\' with [abort]:');
+
+      expect(mockAsk).toHaveBeenCalledWith("    Replace all instances of 'foo' with [abort]:");
     });
   });
 
   describe('ask()', () => {
-    it('should call readerFactory.question()', async() => {
+    it('should call readerFactory.question()', async () => {
       const ct = new CodeTender({
         folder: 'foo',
         verbose: true,
         logger: jest.fn(),
-        readerFactory: testReaderFactory({ 'foo': 'bar' }),
+        readerFactory: testReaderFactory({ foo: 'bar' }),
       });
 
       const inputHandler = new InputHandler(ct);
