@@ -1,9 +1,4 @@
-import readline from 'readline/promises';
-import { ScriptsConfig } from '../scripts/ScriptsConfig';
-import { Token } from '../tokens/Token';
-import { Variable } from '../Variable';
-import { RemoteTemplateConfig } from './RemoteTemplateConfig';
-import { IQuestionReader } from 'src/io/IQuestionReader';
+import { IQuestionReader, RemoteTemplateConfig, ScriptsConfig, Token, Variable } from '../index';
 
 export interface CodeTenderConfig {
   folder: string;
