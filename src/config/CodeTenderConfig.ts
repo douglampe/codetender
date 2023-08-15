@@ -7,7 +7,6 @@ export interface CodeTenderConfig {
   logger?: (message: any) => void;
   tokens?: Array<Token>;
   remote?: Array<RemoteTemplateConfig>;
-  include?: Array<string>;
   noReplace?: Array<string>;
   ignore?: Array<string>;
   delete?: Array<string>;
