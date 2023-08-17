@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-publish:
-    name: Docker Build and Deploy
+    name: Build and Publish to NPM
     runs-on: ubuntu-latest
     environment: prod
     steps:

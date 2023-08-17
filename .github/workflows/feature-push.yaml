@@ -7,8 +7,8 @@ on:
       - master
 
 jobs:
-  build-and-publish:
-    name: Docker Build and Deploy
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
