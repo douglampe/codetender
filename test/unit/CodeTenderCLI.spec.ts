@@ -23,6 +23,10 @@ jest.mock('../../src/CodeTender', () => {
 describe('CodeTenderCLI', () => {
   const oldArgv = process.argv;
 
+  beforeEach(() => {
+    CodeTenderCLI.isTest = true;
+  });
+
   afterEach(() => {
     process.argv = oldArgv;
     jest.resetAllMocks();
@@ -43,7 +47,6 @@ describe('CodeTenderCLI', () => {
       return true;
     });
 
-    CodeTenderCLI.isTest = true;
 
     process.argv = [];
     await expect(CodeTenderCLI.run()).rejects.toThrow('(outputHelp)');
@@ -77,15 +80,11 @@ Commands:
       return true;
     });
 
-    CodeTenderCLI.isTest = true;
-
     process.argv = ['node', 'codetender', '-i'];
     expect(CodeTenderCLI.run()).rejects.toThrow(pkgInfo.version);
   });
 
   it('should call new', async () => {
-    CodeTenderCLI.isTest = true;
-
     const params: any = {};
 
     process.argv = ['node', 'codetender', 'new', '-v', 'template/path', 'output/folder'];
@@ -100,8 +99,6 @@ Commands:
   });
 
   it('should call add', async () => {
-    CodeTenderCLI.isTest = true;
-
     const params: any = {};
 
     process.argv = ['node', 'codetender', 'add', 'template/path', 'output/folder'];
@@ -115,8 +112,6 @@ Commands:
   });
 
   it('should call replace', async () => {
-    CodeTenderCLI.isTest = true;
-
     const params: any = {};
 
     process.argv = ['node', 'codetender', 'replace', 'process/folder'];
