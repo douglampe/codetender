@@ -76,9 +76,9 @@ describe('CodeTender', () => {
         tokens: [],
         logger: mockLogger,
         scripts: {
-          before: [ 'before.js' ],
-          after: [ 'after.js' ],
-        }
+          before: ['before.js'],
+          after: ['after.js'],
+        },
       });
 
       expect(ct.state).toEqual({
@@ -93,8 +93,8 @@ describe('CodeTender', () => {
             tokens: [],
             logger: mockLogger,
             scripts: {
-              before: [ 'before.js' ],
-              after: [ 'after.js' ],
+              before: ['before.js'],
+              after: ['after.js'],
             },
           },
           configPaths: [],
@@ -127,8 +127,8 @@ describe('CodeTender', () => {
           ignore: ['ignore', '**/.git/', '.codetender'],
           noReplace: ['do-not-replace', '**/.git/', '.codetender'],
           scripts: {
-            before: [ 'before.js' ],
-            after: [ 'after.js' ],
+            before: ['before.js'],
+            after: ['after.js'],
           },
           delete: [],
           tokenMap: {},

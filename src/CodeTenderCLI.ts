@@ -11,7 +11,12 @@ export class CodeTenderCLI {
     const program = new Command();
 
     if (CodeTenderCLI.isTest) {
-      program.exitOverride();
+      program.exitOverride().configureOutput({
+        writeOut: CodeTenderCLI.log,
+        writeErr: CodeTenderCLI.log,
+        getOutHelpWidth: () => 160,
+        getErrHelpWidth: () => 160,
+      });
     }
 
     program.name('codetender').version(pkgInfo.version, '-i, --info', 'Display current version number');
@@ -52,7 +57,7 @@ export class CodeTenderCLI {
     await program.parseAsync(process.argv);
   }
 
-  public static async new(template: string, folder: string, opts: any, cmd: Command) {
+  public static async new(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
     CodeTenderCLI.log(options);
 
@@ -73,8 +78,16 @@ export class CodeTenderCLI {
     await ct.new();
   }
 
-  public static async add(template: string, folder: string, opts: any, cmd: Command) {
+  public static async add(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
+
+    if (options && options.verbose) {
+      CodeTenderCLI.log('Debug output enabled.');
+      CodeTenderCLI.log('Command Line Arguments:');
+      CodeTenderCLI.log('  Template: ' + template);
+      CodeTenderCLI.log('  Folder: ' + folder);
+      CodeTenderCLI.log('  Debug: true');
+    }
 
     const ct = new CodeTender({
       ...options,
@@ -85,8 +98,15 @@ export class CodeTenderCLI {
     await ct.add();
   }
 
-  public static async replace(folder: string, opts: any, cmd: Command) {
+  public static async replace(folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
+
+    if (options && options.verbose) {
+      CodeTenderCLI.log('Debug output enabled.');
+      CodeTenderCLI.log('Command Line Arguments:');
+      CodeTenderCLI.log('  Folder: ' + folder);
+      CodeTenderCLI.log('  Debug: true');
+    }
 
     const ct = new CodeTender({
       ...options,
