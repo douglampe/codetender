@@ -25,14 +25,13 @@ describe('CodeTenderCLI', () => {
 
   beforeEach(() => {
     CodeTenderCLI.isTest = true;
+    CodeTenderCLI.log = jest.fn();
   });
 
   afterEach(() => {
     process.argv = oldArgv;
     jest.resetAllMocks();
   });
-
-  CodeTenderCLI.log = jest.fn();
 
   it('should display help', async () => {
     const log: Array<any> = [];
@@ -46,7 +45,6 @@ describe('CodeTenderCLI', () => {
       log.push(data);
       return true;
     });
-
 
     process.argv = [];
     await expect(CodeTenderCLI.run()).rejects.toThrow('(outputHelp)');

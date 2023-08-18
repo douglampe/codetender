@@ -11,7 +11,9 @@ export class CodeTenderCLI {
     const program = new Command();
 
     if (CodeTenderCLI.isTest) {
-      program.exitOverride();
+      program.exitOverride().configureOutput({
+        writeOut: CodeTenderCLI.log,
+      });
     }
 
     program.name('codetender').version(pkgInfo.version, '-i, --info', 'Display current version number');
