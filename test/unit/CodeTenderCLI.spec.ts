@@ -33,6 +33,16 @@ describe('CodeTenderCLI', () => {
     jest.resetAllMocks();
   });
 
+  afterAll(async () => {
+    return new Promise<void>((resolve, reject) => {
+      if (!process.stdout.write('')) {
+        process.stdout.once('drain', () => {
+          resolve();
+        });
+      }
+    });
+  });
+
   it('should display help', async () => {
     const log: Array<string> = [];
 
