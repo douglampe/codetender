@@ -26,7 +26,5 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: |
-          stty cols 132
-          npm run test
+        run: npm run test
         

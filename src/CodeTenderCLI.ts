@@ -14,6 +14,8 @@ export class CodeTenderCLI {
       program.exitOverride().configureOutput({
         writeOut: CodeTenderCLI.log,
         writeErr: CodeTenderCLI.log,
+        getOutHelpWidth: () => 160,
+        getErrHelpWidth: () => 160,
       });
     }
 
