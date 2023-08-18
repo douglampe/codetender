@@ -43,30 +43,6 @@ describe('CodeTenderCLI', () => {
 
     process.argv = [];
     await expect(CodeTenderCLI.run()).rejects.toThrow('(outputHelp)');
-    
-    await (async() => {
-      return new Promise<void>((resolve, reject) => {
-        if (!process.stdout.write('')) {
-          process.stdout.once('drain', () => {
-            resolve();
-          });
-        } else {
-          resolve();
-        }
-      });
-    })();
-
-    await (async() => {
-      return new Promise<void>((resolve, reject) => {
-        if (!process.stderr.write('')) {
-          process.stderr.once('drain', () => {
-            resolve();
-          });
-        } else {
-          resolve();
-        }
-      });
-    })();
 
     expect(log).toEqual([
       `Usage: codetender [options] [command]
@@ -93,7 +69,7 @@ Commands:
     });
 
     process.argv = ['node', 'codetender', '-i'];
-    expect(CodeTenderCLI.run()).rejects.toThrow(pkgInfo.version);
+    await expect(CodeTenderCLI.run()).rejects.toThrow(pkgInfo.version);
   });
 
   it('should call new', async () => {
