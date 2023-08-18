@@ -44,6 +44,8 @@ describe('CodeTenderCLI', () => {
     process.argv = [];
     await expect(CodeTenderCLI.run()).rejects.toThrow('(outputHelp)');
 
+    expect(log).toEqual([]);
+    
     expect(log).toEqual([
       `Usage: codetender [options] [command]
 
