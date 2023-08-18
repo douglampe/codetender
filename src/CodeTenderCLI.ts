@@ -78,6 +78,14 @@ export class CodeTenderCLI {
   public static async add(template: string, folder: string, opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
 
+    if (options && options.verbose) {
+      CodeTenderCLI.log('Debug output enabled.');
+      CodeTenderCLI.log('Command Line Arguments:');
+      CodeTenderCLI.log('  Template: ' + template);
+      CodeTenderCLI.log('  Folder: ' + folder);
+      CodeTenderCLI.log('  Debug: true');
+    }
+
     const ct = new CodeTender({
       ...options,
       template,
@@ -89,6 +97,13 @@ export class CodeTenderCLI {
 
   public static async replace(folder: string, opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
+
+    if (options && options.verbose) {
+      CodeTenderCLI.log('Debug output enabled.');
+      CodeTenderCLI.log('Command Line Arguments:');
+      CodeTenderCLI.log('  Folder: ' + folder);
+      CodeTenderCLI.log('  Debug: true');
+    }
 
     const ct = new CodeTender({
       ...options,
