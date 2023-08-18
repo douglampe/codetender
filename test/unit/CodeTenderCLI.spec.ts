@@ -56,6 +56,18 @@ describe('CodeTenderCLI', () => {
       });
     })();
 
+    await (async() => {
+      return new Promise<void>((resolve, reject) => {
+        if (!process.stderr.write('')) {
+          process.stderr.once('drain', () => {
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
+    })();
+
     expect(log).toEqual([
       `Usage: codetender [options] [command]
 
