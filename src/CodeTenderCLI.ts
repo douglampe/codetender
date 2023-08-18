@@ -54,7 +54,7 @@ export class CodeTenderCLI {
     await program.parseAsync(process.argv);
   }
 
-  public static async new(template: string, folder: string, opts: any, cmd: Command) {
+  public static async new(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
     CodeTenderCLI.log(options);
 
@@ -75,7 +75,7 @@ export class CodeTenderCLI {
     await ct.new();
   }
 
-  public static async add(template: string, folder: string, opts: any, cmd: Command) {
+  public static async add(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
 
     if (options && options.verbose) {
@@ -95,7 +95,7 @@ export class CodeTenderCLI {
     await ct.add();
   }
 
-  public static async replace(folder: string, opts: any, cmd: Command) {
+  public static async replace(folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
 
     if (options && options.verbose) {
