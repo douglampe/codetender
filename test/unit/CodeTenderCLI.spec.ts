@@ -28,19 +28,9 @@ describe('CodeTenderCLI', () => {
     CodeTenderCLI.log = jest.fn();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     process.argv = oldArgv;
     jest.resetAllMocks();
-  });
-
-  afterAll(async () => {
-    return new Promise<void>((resolve, reject) => {
-      if (!process.stdout.write('')) {
-        process.stdout.once('drain', () => {
-          resolve();
-        });
-      }
-    });
   });
 
   it('should display help', async () => {
@@ -53,6 +43,18 @@ describe('CodeTenderCLI', () => {
 
     process.argv = [];
     await expect(CodeTenderCLI.run()).rejects.toThrow('(outputHelp)');
+    
+    await (async() => {
+      return new Promise<void>((resolve, reject) => {
+        if (!process.stdout.write('')) {
+          process.stdout.once('drain', () => {
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
+    })();
 
     expect(log).toEqual([
       `Usage: codetender [options] [command]
