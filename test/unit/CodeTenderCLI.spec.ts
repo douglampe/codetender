@@ -34,15 +34,10 @@ describe('CodeTenderCLI', () => {
   });
 
   it('should display help', async () => {
-    const log: Array<any> = [];
+    const log: Array<string> = [];
 
-    jest.spyOn(process.stdout, 'write').mockImplementation((data, _cb) => {
-      log.push(data);
-      return true;
-    });
-
-    jest.spyOn(process.stderr, 'write').mockImplementation((data, _cb) => {
-      log.push(data);
+    jest.spyOn(CodeTenderCLI, 'log').mockImplementation((message) => {
+      log.push(message);
       return true;
     });
 
@@ -66,15 +61,10 @@ Commands:
   });
 
   it('should display version', async () => {
-    const log: Array<any> = [];
+    const log: Array<string> = [];
 
-    jest.spyOn(process.stdout, 'write').mockImplementation((data, _cb) => {
-      log.push(data);
-      return true;
-    });
-
-    jest.spyOn(process.stderr, 'write').mockImplementation((data, _cb) => {
-      log.push(data);
+    jest.spyOn(CodeTenderCLI, 'log').mockImplementation((message) => {
+      log.push(message);
       return true;
     });
 

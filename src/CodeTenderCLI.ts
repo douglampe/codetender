@@ -13,6 +13,7 @@ export class CodeTenderCLI {
     if (CodeTenderCLI.isTest) {
       program.exitOverride().configureOutput({
         writeOut: CodeTenderCLI.log,
+        writeErr: CodeTenderCLI.log,
       });
     }
 
