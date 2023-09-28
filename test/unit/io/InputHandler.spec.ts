@@ -1,4 +1,4 @@
-import readline from 'readline/promises';
+import readline from 'readline';
 import { CodeTender, InputHandler, Token } from '../../../src/index';
 import { testReaderFactory } from '../../Util';
 
@@ -12,7 +12,9 @@ describe('InputHandler', () => {
       const mockCreateInterface = jest.fn();
       jest.spyOn(readline, 'createInterface').mockImplementation(mockCreateInterface);
       mockCreateInterface.mockReturnValue({
-        question: (prompt: string) => Promise.resolve('bar'),
+        question: (_prompt: string, callback: (answer: string) => void) => {
+          callback('bar');
+        }
       });
 
       const ct = new CodeTender({

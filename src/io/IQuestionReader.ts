@@ -1,3 +1,3 @@
 export interface IQuestionReader {
-  question: (prompt: string) => Promise<string>;
+  question: (prompt: string, callback: (answer: string) => void) => void;
 }

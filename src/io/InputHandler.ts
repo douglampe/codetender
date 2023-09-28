@@ -1,4 +1,4 @@
-import readline from 'readline/promises';
+import readline from 'readline';
 import { CodeTender, IQuestionReader, Token, TokenProcessor } from '../index';
 
 export class InputHandler {
@@ -105,9 +105,11 @@ export class InputHandler {
    * Read a single value from the command line
    * @param {string} prompt
    */
-  public async ask(prompt: string) {
+  public async ask(prompt: string): Promise<string> {
     const rl = this.readerFactory();
 
-    return rl.question(prompt);
+    return new Promise((resolve, _reject) => {
+      rl.question(prompt, resolve);
+    });
   }
 }

@@ -6,12 +6,12 @@ import { rimraf } from 'rimraf';
 export function testReaderFactory(map: Record<string, string>): () => IQuestionReader {
   return () => {
     return {
-      question: async (prompt: string) => {
+      question: async (prompt: string, callback: (answer: string) => void) => {
         if (prompt in map) {
           const response = map[prompt];
-          return Promise.resolve(response);
+          callback(response);
         } else {
-          return Promise.reject(`Prompt '${prompt}' not found in map`);
+          callback(`Prompt '${prompt}' not found in map`);
         }
       },
     }
