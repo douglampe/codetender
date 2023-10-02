@@ -109,7 +109,10 @@ export class InputHandler {
     const rl = this.readerFactory();
 
     return new Promise((resolve, _reject) => {
-      rl.question(prompt, resolve);
+      rl.question(prompt, (answer) => {
+        resolve(answer);
+        rl.close();
+      });
     });
   }
 }

@@ -14,6 +14,7 @@ export function testReaderFactory(map: Record<string, string>): () => IQuestionR
           callback(`Prompt '${prompt}' not found in map`);
         }
       },
+      close: () => {},
     }
   };
 }
