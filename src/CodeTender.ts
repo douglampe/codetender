@@ -32,7 +32,9 @@ export class CodeTender {
         template: config.template ?? '',
         sourcePath: config.template ? FileHandler.resolve(config.template) : '',
         isLocalTemplate: false,
+        include: config.include ? [config.include] : [],
         remote: [],
+        hasConfig: false,
       },
       target: {
         folder: config.folder,
@@ -221,7 +223,7 @@ export class CodeTender {
       this.state.source.isLocalTemplate = true;
       this.logger.log(`Copying from local template folder: ${this.state.source.template} into temporary folder: ${this.state.source.sourcePath}`);
 
-      return this.fileHandler.copyFromFs(this.state.source.template!, this.state.source.sourcePath);
+      return this.fileHandler.copyFromFs(this.state.source.template!, this.state.source.sourcePath, true);
     }
 
     this.logger.verboseLog('Template appears to be remote');

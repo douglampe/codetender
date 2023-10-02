@@ -10,7 +10,9 @@ export interface CodeTenderState {
     template: string;
     sourcePath: string;
     isLocalTemplate: boolean;
+    include: Array<string>;
     remote: Array<RemoteTemplateConfig>;
+    hasConfig: boolean;
   };
   target: {
     folder: string;

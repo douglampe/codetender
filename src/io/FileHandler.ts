@@ -32,14 +32,31 @@ export class FileHandler {
   }
 
   // Copy template from local file system
-  async copyFromFs(from: string, to: string) {
+  async copyFromFs(from: string, to: string, includedOnly: boolean = false) {
     // Create destination folder if it doesn't exist:
     this.ct.logger.verboseLog(`  Creating folder: ${to}`);
     await FileHandler.ensurePathExists(to);
     // Copy from source to destination:
-    this.ct.logger.verboseLog(`  Copying from: ${from} to: ${to} with overwrite ${this.ct.config.overwrite ?? false}`);
+    
+    if (this.ct.state.source.include.length > 0 && includedOnly) {
+      await this.copyIncludedOnly(from, to);
+    } else {
+      this.ct.logger.verboseLog(`  Copying from: ${from} to: ${to} with overwrite ${this.ct.config.overwrite ?? false}`);
+      await FileHandler.copy(from, to, this.ct.config.overwrite ?? false);
+    }
+  }
 
-    await FileHandler.copy(from, to, this.ct.config.overwrite ?? false);
+  async copyIncludedOnly(from: string, to: string): Promise<void> {
+    this.ct.state.source.include.map((included) => {this.ct.logger.verboseLog(`  Copying from: ${path.join(from, included)} to: ${path.join(to, included)} with overwrite ${this.ct.config.overwrite ?? false}`)});
+    if (this.ct.state.source.hasConfig) {
+      await FileHandler.ensurePathExists(to);
+      await FileHandler.copy(path.join(from, '.codetender'), path.join(to, '.codetender'), this.ct.config.overwrite ?? false);
+    }
+    await Promise.all(this.ct.state.source.include.map(async (included) => {
+      const toFile = path.join(to, included);
+      await FileHandler.ensurePathExists(path.dirname(included));
+      return FileHandler.copy(path.join(from, included), toFile, this.ct.config.overwrite ?? false);
+    }));
   }
 
   // Clean up ignored files after git clone

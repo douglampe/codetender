@@ -48,7 +48,7 @@ describe('CodeTenderCLI', () => {
       `Usage: codetender [options] [command]
 
 Options:
-  -i, --info                         Display current version number
+  -?, --info                         Display current version number
   -h, --help                         display help for command
 
 Commands:
@@ -68,7 +68,7 @@ Commands:
       return true;
     });
 
-    process.argv = ['node', 'codetender', '-i'];
+    process.argv = ['node', 'codetender', '-?'];
     await expect(CodeTenderCLI.run()).rejects.toThrow(pkgInfo.version);
   });
 

@@ -19,7 +19,7 @@ export class ConfigParser {
   public async readTemplateConfig() {
     this.ct.logger.verboseLog('Looking for .codetender config...');
 
-    await this.readConfig(path.join(this.ct.state.source.sourcePath, '.codetender'));
+    this.ct.state.source.hasConfig = await this.readConfig(path.join(this.ct.state.source.sourcePath, '.codetender'));
   }
 
   /**
@@ -44,7 +44,7 @@ export class ConfigParser {
       } else {
         this.ct.logger.verboseLog(`File not found: ${file}`);
       }
-      return;
+      return false;
     }
 
     const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
@@ -147,5 +147,7 @@ export class ConfigParser {
         this.ct.state.process.banner.push(...fileConfig.banner);
       }
     }
+
+    return true;
   }
 }

@@ -19,7 +19,7 @@ export class CodeTenderCLI {
       });
     }
 
-    program.name('codetender').version(pkgInfo.version, '-i, --info', 'Display current version number');
+    program.name('codetender').version(pkgInfo.version, '-?, --info', 'Display current version number');
 
     program
       .command('new')
@@ -27,7 +27,8 @@ export class CodeTenderCLI {
       .argument('folder')
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
-      .option('-f, --file <file>', 'Replace tokens as specified in a file')
+      .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
+      .option('-i, --include <file>', 'Only include file specified')
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Copies contents of template to new folder then prompts for token replacement as needed')
       .action(CodeTenderCLI.new);
@@ -38,7 +39,8 @@ export class CodeTenderCLI {
       .argument('folder')
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
-      .option('-f, --file <file>', 'Replace tokens as specified in a file')
+      .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
+      .option('-i, --include <file>', 'Only include file specified')
       .option('-o, --overwrite', 'Overwrite existing files with template contents')
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Copies contents of template to an existing folder then prompts for token replacement as needed')
@@ -49,7 +51,8 @@ export class CodeTenderCLI {
       .argument('folder')
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
-      .option('-f, --file <file>', 'Replace tokens as specified in a file')
+      .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
+      .option('-i, --include <file>', 'Only include file specified')
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Prompts for token replacement and replaces tokens')
       .action(CodeTenderCLI.replace);

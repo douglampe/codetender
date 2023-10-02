@@ -29,7 +29,9 @@ describe('CodeTender', () => {
           template: '',
           sourcePath: '',
           isLocalTemplate: false,
+          include: [],
           remote: [],
+          hasConfig: false,
         },
         target: {
           folder: 'folder',
@@ -103,7 +105,9 @@ describe('CodeTender', () => {
           template: 'foo',
           sourcePath: '/temp',
           isLocalTemplate: false,
+          include: [],
           remote: [],
+          hasConfig: false,
         },
         target: {
           folder: 'folder',
