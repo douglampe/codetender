@@ -14,7 +14,8 @@ describe('InputHandler', () => {
       mockCreateInterface.mockReturnValue({
         question: (_prompt: string, callback: (answer: string) => void) => {
           callback('bar');
-        }
+        },
+        close: jest.fn(),
       });
 
       const ct = new CodeTender({
