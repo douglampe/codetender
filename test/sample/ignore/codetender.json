@@ -1,0 +1,21 @@
+{
+  "tokens": [
+    {
+      "pattern": "CodeTender",
+      "replacement": "Served"
+    },
+    {
+      "pattern": "foo",
+      "replacement": "bar"
+    },
+    {
+      "pattern": "README.codetender.md",
+      "replacement": "README.md",
+      "overwrite": true
+    },
+    {
+      "pattern": "Won't find this anywhere",
+      "replacement": "foo"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { CodeTender, FileHandler } from '../../../src/index';
 import fs from 'graceful-fs';
 import path from 'path';
 import fsExtra from 'fs-extra';
+import * as fg from 'fast-glob';
 import * as replaceInFile from 'replace-in-file';
 import * as rimraf from 'rimraf';
 
@@ -16,7 +17,15 @@ jest.mock('fs-extra', () => {
 jest.mock('replace-in-file');
 jest.mock('rimraf');
 
+jest.mock('fast-glob', () => {
+  return {
+    __esModule: true,
+    ...jest.requireActual('fast-glob')
+  };
+});
+
 describe('FileHandler', () => {
+  
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -88,6 +97,34 @@ describe('FileHandler', () => {
 
       expect(mockCopy).toHaveBeenCalledWith('from', 'to', false);
     });
+
+    it('should call copyIncludedOnly if include specified', async () => {
+      const mockEnsurePathExists = jest.spyOn(FileHandler, 'ensurePathExists');
+      mockEnsurePathExists.mockResolvedValueOnce(undefined);
+      mockEnsurePathExists.mockResolvedValueOnce(undefined);
+      mockEnsurePathExists.mockResolvedValueOnce(undefined);
+      const mockCopy = jest.spyOn(FileHandler, 'copy');
+      mockCopy.mockResolvedValueOnce(undefined);
+      mockCopy.mockResolvedValueOnce(undefined);
+
+      const ct = new CodeTender({
+        folder: 'foo',
+        template: 'template',
+        include: ['foo.txt'],
+        verbose: true,
+        logger: jest.fn(),
+      });
+      ct.state.source.hasConfig = true;
+
+      const fileHandler = new FileHandler(ct);
+
+      await fileHandler.copyFromFs('from', 'to', true);
+
+      expect(mockEnsurePathExists).toHaveBeenCalledWith('to');
+
+      expect(mockCopy).toHaveBeenCalledWith('from/.codetender', 'to/.codetender', false);
+      expect(mockCopy).toHaveBeenCalledWith('from/foo.txt', 'to/foo.txt', false);
+    });
   });
 
   describe('cleanupIgnored()', () => {
@@ -110,6 +147,38 @@ describe('FileHandler', () => {
       await fileHandler.cleanupIgnored();
 
       expect(mockCleanUpFiles).toHaveBeenCalledWith(['ignore', '**/.git/', '.codetender'], 'ignore');
+    });
+  });
+
+  describe('deleteGlobs()', () => {
+    it('should call remove for each glob', async () => {
+      const ct = new CodeTender({
+        folder: 'foo',
+        verbose: true,
+        logger: jest.fn(),
+      });
+      
+      const fileHandler = new FileHandler(ct);
+      
+      const mockRemove = jest.spyOn(FileHandler, 'remove');
+      mockRemove.mockResolvedValueOnce(true);
+      mockRemove.mockResolvedValueOnce(true);
+      
+      const mockGlob = jest.fn();
+
+      jest.spyOn(fg, 'glob').mockImplementation(mockGlob);
+  
+      mockGlob.mockResolvedValueOnce([
+        { path: 'foo.txt', dirent: { isDirectory: jest.fn().mockReturnValueOnce(false) } },
+        { path: 'bar', dirent: { isDirectory: jest.fn().mockReturnValueOnce(true) } },
+      ]);
+      
+      await fileHandler.deleteGlobs(['foo'], 'here');
+
+      expect(mockGlob).toHaveBeenCalled();
+
+      expect(mockRemove).toHaveBeenCalledWith('here/foo.txt', false);
+      expect(mockRemove).toHaveBeenCalledWith('here/bar', true);
     });
   });
 
@@ -277,13 +346,33 @@ describe('FileHandler', () => {
     });
   });
 
-  describe('rimraf()', () => {
-    it('should call rimraf', async () => {
+  describe('remove()', () => {
+    it('should call rimraf for directory', async () => {
       const mockRimraf = jest.spyOn(rimraf, 'rimraf').mockResolvedValue(true);
 
-      await FileHandler.remove('/delete/me');
+      jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
 
-      expect(mockRimraf).toHaveBeenCalledWith('/delete/me', { glob: true, preserveRoot: false });
+      await FileHandler.remove('/delete/me', true);
+
+      expect(mockRimraf).toHaveBeenCalledWith('/delete/me', { preserveRoot: false });
+    });
+
+    it('should call unlink for file', async () => {
+      const mockUnlink = jest.spyOn(fsExtra.promises, 'unlink').mockResolvedValue(undefined);
+
+      jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(true);
+
+      await FileHandler.remove('/delete/me.txt', false);
+
+      expect(mockUnlink).toHaveBeenCalledWith('/delete/me.txt');
+    });
+
+    it('should return false if file does not exist', async () => {
+      jest.spyOn(FileHandler, 'exists').mockResolvedValueOnce(false);
+
+      const result = await FileHandler.remove('/delete/me.txt', false);
+
+      expect(result).toEqual(false);
     });
   });
 });

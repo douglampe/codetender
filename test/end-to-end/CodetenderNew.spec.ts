@@ -1,16 +1,14 @@
 import path from 'path';
-import { CodeTender, FileHandler } from '../../src/index';
-import { isFile, isDir, makeGitFile, remove, fileContains } from '../Util';
+import { CodeTender } from '../../src/index';
+import { isFile, isDir, remove, fileContains } from '../Util';
 import { defineReplaceTests } from './CodetenderReplace.spec';
 
 describe('codetender new', () => {
   process.chdir(path.join(__dirname, '..'));
 
-  let ct: CodeTender;
-
   beforeAll(async () => {
-    await FileHandler.remove('output/test-new');
-    ct = new CodeTender({
+    await remove('output/test-new');
+    const ct = new CodeTender({
       folder: 'output/test-new',
       template: 'sample/local',
       file: 'sample/local/codetender.json',
@@ -22,7 +20,7 @@ describe('codetender new', () => {
   });
 
   afterAll(async () => {
-    await remove('output/test-new');
+    // await remove('output/test-new');
   });
 
   it('should handle .codetender configs', async () => {

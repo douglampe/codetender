@@ -28,7 +28,7 @@ export class CodeTenderCLI {
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
       .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
-      .option('-i, --include <file>', 'Only include file specified')
+      .option('-i, --include <file>', 'Only include file specified', (value: string, previous: [string]) => { return previous.concat(value)}, [])
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Copies contents of template to new folder then prompts for token replacement as needed')
       .action(CodeTenderCLI.new);
@@ -40,7 +40,7 @@ export class CodeTenderCLI {
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
       .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
-      .option('-i, --include <file>', 'Only include file specified')
+      .option('-i, --include <file>', 'Only include file specified', (value: string, previous: [string]) => { return previous.concat(value)}, [])
       .option('-o, --overwrite', 'Overwrite existing files with template contents')
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Copies contents of template to an existing folder then prompts for token replacement as needed')
@@ -52,7 +52,7 @@ export class CodeTenderCLI {
       .option('-d, --debug', 'Display debugging output')
       .option('-q, --quiet', 'Do not output to console (overrides --debug)')
       .option('-f, --file <file>', 'Replace tokens as specified in a configuration file')
-      .option('-i, --include <file>', 'Only include file specified')
+      .option('-i, --include <file>', 'Only include file specified', (value: string, previous: [string]) => { return previous.concat(value)}, [])
       .option('-v, --verbose', 'Display verbose debugging output')
       .description('Prompts for token replacement and replaces tokens')
       .action(CodeTenderCLI.replace);
@@ -62,9 +62,8 @@ export class CodeTenderCLI {
 
   public static async new(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
-    CodeTenderCLI.log(options);
 
-    if (options && options.verbose) {
+    if (options?.verbose) {
       CodeTenderCLI.log('Debug output enabled.');
       CodeTenderCLI.log('Command Line Arguments:');
       CodeTenderCLI.log('  Template: ' + template);
@@ -84,7 +83,7 @@ export class CodeTenderCLI {
   public static async add(template: string, folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
 
-    if (options && options.verbose) {
+    if (options?.verbose) {
       CodeTenderCLI.log('Debug output enabled.');
       CodeTenderCLI.log('Command Line Arguments:');
       CodeTenderCLI.log('  Template: ' + template);
@@ -104,7 +103,7 @@ export class CodeTenderCLI {
   public static async replace(folder: string, _opts: any, cmd: Command) {
     const options = cmd.optsWithGlobals();
 
-    if (options && options.verbose) {
+    if (options?.verbose) {
       CodeTenderCLI.log('Debug output enabled.');
       CodeTenderCLI.log('Command Line Arguments:');
       CodeTenderCLI.log('  Folder: ' + folder);

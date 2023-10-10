@@ -32,7 +32,7 @@ export class CodeTender {
         template: config.template ?? '',
         sourcePath: config.template ? FileHandler.resolve(config.template) : '',
         isLocalTemplate: false,
-        include: config.include ? [config.include] : [],
+        include: config.include ? config.include : [],
         remote: [],
         hasConfig: false,
       },

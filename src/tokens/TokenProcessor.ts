@@ -34,7 +34,7 @@ export class TokenProcessor {
   }
 
   public async prepNoReplace() {
-    if ((this.ct.state.process.noReplace.length ?? 0) < 1) {
+    if ((this.ct.state.process.noReplace.length) < 1) {
       this.ct.logger.verboseLog('No globs specified to skip token replacement.');
     } else {
       this.ct.logger.verboseLog('Processing globs specified to skip token replacement...');
@@ -91,7 +91,7 @@ export class TokenProcessor {
     }
 
     if (await FileHandler.dirExists(itemPath)) {
-      await this.processFolder(itemPath);
+      return this.processFolder(itemPath);
     }
 
     this.ct.logger.verboseLog('Replacing tokens in: ' + itemPath);

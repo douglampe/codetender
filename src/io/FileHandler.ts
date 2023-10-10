@@ -1,4 +1,5 @@
 import path from 'path';
+import * as fg from 'fast-glob';
 import { rimraf } from 'rimraf';
 import * as fsExtra from 'fs-extra';
 import fs from 'graceful-fs';
@@ -15,7 +16,7 @@ export class FileHandler {
   }
 
   async createTempFolder() {
-    this.ct.logger.verboseLog('Creating temporary folder...');
+    this.ct.logger.verboseLog(`Creating temporary folder...`);
 
     await FileHandler.ensurePathExists(this.ct.state.target.targetPath);
 
@@ -47,11 +48,12 @@ export class FileHandler {
   }
 
   async copyIncludedOnly(from: string, to: string): Promise<void> {
-    this.ct.state.source.include.map((included) => {this.ct.logger.verboseLog(`  Copying from: ${path.join(from, included)} to: ${path.join(to, included)} with overwrite ${this.ct.config.overwrite ?? false}`)});
     if (this.ct.state.source.hasConfig) {
+      this.ct.logger.verboseLog(`Copying from: ${from}/.codetender to: ${to}/.codetender`);
       await FileHandler.ensurePathExists(to);
       await FileHandler.copy(path.join(from, '.codetender'), path.join(to, '.codetender'), this.ct.config.overwrite ?? false);
     }
+    this.ct.state.source.include.map((included) => {this.ct.logger.verboseLog(`  Copying from: ${path.join(from, included)} to: ${path.join(to, included)} with overwrite ${this.ct.config.overwrite ?? false}`)});
     await Promise.all(this.ct.state.source.include.map(async (included) => {
       const toFile = path.join(to, included);
       await FileHandler.ensurePathExists(path.dirname(included));
@@ -78,13 +80,24 @@ export class FileHandler {
       this.ct.logger.verboseLog('No patterns defined for ' + key + ' config.');
       return;
     }
-
+    
     this.ct.logger.verboseLog('Removing files from cloned repository matching ' + key + ' config...');
 
-    for await (const pattern of patterns) {
-      this.ct.logger.verboseLog('  Removing: ' + path.join(this.ct.state.process.processPath, pattern));
+    await this.deleteGlobs(patterns, this.ct.state.process.processPath);
+  }
 
-      await FileHandler.remove(path.join(this.ct.state.process.processPath, pattern));
+  async deleteGlobs(patterns: string[], cwd: string) {
+    const globs = await fg.glob(patterns, {
+      cwd,
+      stats: true,
+    });
+
+    for await (const entry of globs) {
+      // Do not allow .. hack to delete above process path:
+      if (!entry.path.startsWith('..')) {
+        this.ct.logger.verboseLog(`  Deleting ${entry.path}`);
+        await FileHandler.remove(path.join(cwd, entry.path), entry.dirent.isDirectory());
+      }
     }
   }
 
@@ -160,7 +173,15 @@ export class FileHandler {
     return replaceInFile(config);
   }
 
-  public static async remove(path: string): Promise<boolean> {
-    return rimraf(path, { glob: true, preserveRoot: false });
+  public static async remove(path: string, isDirectory: boolean = true): Promise<boolean> {
+    if (await FileHandler.exists(path)) {
+      if (isDirectory) {
+        return await rimraf(path, { preserveRoot: false });
+      } else {
+        await fsExtra.promises.unlink(path);
+        return true;
+      }
+    }
+    return false;
   }
 }

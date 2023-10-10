@@ -73,8 +73,6 @@ Commands:
   });
 
   it('should call new', async () => {
-    const params: any = {};
-
     process.argv = ['node', 'codetender', 'new', '-v', 'template/path', 'output/folder'];
     await CodeTenderCLI.run();
 
@@ -82,32 +80,91 @@ Commands:
       template: 'template/path',
       folder: 'output/folder',
       verbose: true,
+      include: [],
     });
     expect(mockCodeTender.new).toHaveBeenCalledWith();
   });
 
   it('should call add', async () => {
-    const params: any = {};
-
     process.argv = ['node', 'codetender', 'add', 'template/path', 'output/folder'];
     await CodeTenderCLI.run();
 
     expect(mockConstructor).toHaveBeenCalledWith({
       template: 'template/path',
       folder: 'output/folder',
+      include: [],
     });
     expect(mockCodeTender.add).toHaveBeenCalledWith();
   });
 
   it('should call replace', async () => {
-    const params: any = {};
-
     process.argv = ['node', 'codetender', 'replace', 'process/folder'];
     await CodeTenderCLI.run();
 
     expect(mockConstructor).toHaveBeenCalledWith({
       folder: 'process/folder',
+      include: [],
     });
     expect(mockCodeTender.replace).toHaveBeenCalledWith();
+  });
+
+  it.each(['new', 'add'])('should parse -i or --include for %s', async (action) => {
+    process.argv = ['node', 'codetender', action, 'template/path', 'output/folder', '-i', 'file1', '-i', 'file2'];
+    await CodeTenderCLI.run();
+
+    expect(mockConstructor).toHaveBeenCalledWith({
+      template: 'template/path',
+      folder: 'output/folder',
+      include: ['file1', 'file2'],
+    });
+  });
+
+  it('should parse -i or --include for replace', async () => {
+    process.argv = ['node', 'codetender', 'replace', 'process/folder', '-i', 'file1', '-i', 'file2'];
+    await CodeTenderCLI.run();
+
+    expect(mockConstructor).toHaveBeenCalledWith({
+      folder: 'process/folder',
+      include: ['file1', 'file2'],
+    });
+  });
+
+  it.each(['new', 'add'])('should output arguments if verbose is enabled for %s', async (action) => {
+    const log: Array<string> = [];
+
+    jest.spyOn(CodeTenderCLI, 'log').mockImplementation((message) => {
+      log.push(message);
+      return true;
+    });
+    
+    process.argv = ['node', 'codetender', action, 'template/path', 'output/folder', '-v'];
+    await CodeTenderCLI.run();
+
+    expect(log).toEqual([
+      'Debug output enabled.',
+      'Command Line Arguments:',
+      '  Template: template/path',
+      '  Folder: output/folder',
+      '  Debug: true',
+    ]);
+  });
+
+  it('should parse -i or --include for replace', async () => {
+    const log: Array<string> = [];
+
+    jest.spyOn(CodeTenderCLI, 'log').mockImplementation((message) => {
+      log.push(message);
+      return true;
+    });
+    
+    process.argv = ['node', 'codetender', 'replace', 'process/folder', '-v'];
+    await CodeTenderCLI.run();
+
+    expect(log).toEqual([
+      'Debug output enabled.',
+      'Command Line Arguments:',
+      '  Folder: process/folder',
+      '  Debug: true',
+    ]);
   });
 });
