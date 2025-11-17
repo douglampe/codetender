@@ -50,7 +50,7 @@
   "dependencies": {
     "commander": "^11.0.0",
     "fs-extra": "^11.1.1",
-    "glob": "^10.3.3",
+    "glob": "^11.1.0",
     "graceful-fs": "^4.2.4",
     "mkdirp": "^3.0.1",
     "q": "^1.5.1",
